@@ -1,7 +1,7 @@
 #pragma once
 
 #include <functional>
-
+namespace bre{
 class Defer {
 public:
     template<typename Func>
@@ -14,3 +14,5 @@ public:
 private:
     std::function<void()> f;
 };
+
+} // namespace bre
