@@ -6,33 +6,98 @@
 #include <string>
 #include <vector>
 
-class Rsa
+namespace bre {
+
+class RSA
 {
 private:
-    EVP_PKEY* pkey;
+    EVP_PKEY* m_key;
 
 public:
-    Rsa();
-    ~Rsa();
+    RSA();
+    ~RSA();
 
-    bool generateKeys(int bits = 2048);
-    std::vector<unsigned char> encrypt(const std::string& plaintext);
-    std::string decrypt(const std::vector<unsigned char>& ciphertext);
+    bool GenerateKeys(int bits = 2048);
+    
+    void SetPublicKey(const std::vector<uint8_t>& publicKey){
+        BIO* bio = BIO_new_mem_buf(publicKey.data(), publicKey.size());
+        PEM_read_bio_PUBKEY(bio, &m_key, nullptr, nullptr);
+        BIO_free(bio);
+    }
+    
+    void SetPublicKey(const std::string& publicKey){
+        BIO* bio = BIO_new_mem_buf((void*)publicKey.c_str(), -1);
+        PEM_read_bio_PUBKEY(bio, &m_key, nullptr, nullptr);
+        BIO_free(bio);
+    }
+    std::string GetPublicKey(){
+        BIO* bio = BIO_new(BIO_s_mem());
+        PEM_write_bio_PUBKEY(bio, m_key);
+        char* buffer;
+        size_t length = BIO_get_mem_data(bio, &buffer);
+        std::string publicKey(buffer, length);
+        BIO_free(bio);
+        return publicKey;
+    }
+
+    void SetPrivateKey(const std::string& privateKey){
+        BIO* bio = BIO_new_mem_buf((void*)privateKey.c_str(), -1);
+        PEM_read_bio_PrivateKey(bio, &m_key, nullptr, nullptr);
+        BIO_free(bio);
+    }
+
+    std::string GetPrivateKey(){
+        BIO* bio = BIO_new(BIO_s_mem());
+        PEM_write_bio_PrivateKey(bio, m_key, nullptr, nullptr, 0, 0, nullptr);
+        char* buffer;
+        size_t length = BIO_get_mem_data(bio, &buffer);
+        std::string privateKey(buffer, length);
+        BIO_free(bio);
+        return privateKey;
+    }
+
+    std::vector<uint8_t> Encrypt(const std::vector<uint8_t>& plaintext);
+    std::vector<unsigned char> Encrypt(const std::string& plaintext);
+    std::string DecryptStr(const std::vector<unsigned char>& ciphertext);
+    std::vector<uint8_t> Decrypt(const std::vector<uint8_t>& ciphertext) {
+        std::vector<uint8_t> plaintext(EVP_PKEY_size(m_key));
+        EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(m_key, nullptr);
+
+        if (!ctx)
+            return {};
+
+        if (EVP_PKEY_decrypt_init(ctx) <= 0)
+        {
+            EVP_PKEY_CTX_free(ctx);
+            return {};
+        }
+
+        size_t outlen = plaintext.size();
+        if (EVP_PKEY_decrypt(ctx, plaintext.data(), &outlen, ciphertext.data(), ciphertext.size()) <= 0)
+        {
+            EVP_PKEY_CTX_free(ctx);
+            return {};
+        }
+
+        plaintext.resize(outlen);
+        EVP_PKEY_CTX_free(ctx);
+        return plaintext;
+    }
 };
 
-Rsa::Rsa() : pkey(nullptr)
+RSA::RSA() : m_key(nullptr)
 {
 }
 
-Rsa::~Rsa()
+RSA::~RSA()
 {
-    if (pkey)
+    if (m_key)
     {
-        EVP_PKEY_free(pkey);
+        EVP_PKEY_free(m_key);
     }
 }
 
-bool Rsa::generateKeys(int bits)
+bool RSA::GenerateKeys(int bits)
 {
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, nullptr);
     if (!ctx)
@@ -50,7 +115,7 @@ bool Rsa::generateKeys(int bits)
         return false;
     }
 
-    if (EVP_PKEY_keygen(ctx, &pkey) <= 0)
+    if (EVP_PKEY_keygen(ctx, &m_key) <= 0)
     {
         EVP_PKEY_CTX_free(ctx);
         return false;
@@ -60,10 +125,35 @@ bool Rsa::generateKeys(int bits)
     return true;
 }
 
-std::vector<unsigned char> Rsa::encrypt(const std::string& plaintext)
+std::vector<uint8_t> RSA::Encrypt(const std::vector<uint8_t> &plaintext) {
+    std::vector<uint8_t> ciphertext(EVP_PKEY_size(m_key));
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(m_key, nullptr);
+
+    if (!ctx)
+        return {};
+
+    if (EVP_PKEY_encrypt_init(ctx) <= 0)
+    {
+        EVP_PKEY_CTX_free(ctx);
+        return {};
+    }
+
+    size_t outlen = ciphertext.size();
+    if (EVP_PKEY_encrypt(ctx, ciphertext.data(), &outlen, plaintext.data(), plaintext.size()) <= 0)
+    {
+        EVP_PKEY_CTX_free(ctx);
+        return {};
+    }
+
+    ciphertext.resize(outlen);
+    EVP_PKEY_CTX_free(ctx);
+    return ciphertext;
+}
+
+std::vector<unsigned char> RSA::Encrypt(const std::string &plaintext)
 {
-    std::vector<unsigned char> ciphertext(EVP_PKEY_size(pkey));
-    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, nullptr);
+    std::vector<unsigned char> ciphertext(EVP_PKEY_size(m_key));
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(m_key, nullptr);
 
     if (!ctx)
         return {};
@@ -86,10 +176,10 @@ std::vector<unsigned char> Rsa::encrypt(const std::string& plaintext)
     return ciphertext;
 }
 
-std::string Rsa::decrypt(const std::vector<unsigned char>& ciphertext)
+std::string RSA::DecryptStr(const std::vector<unsigned char>& ciphertext)
 {
-    std::vector<unsigned char> plaintext(EVP_PKEY_size(pkey));
-    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, nullptr);
+    std::vector<unsigned char> plaintext(EVP_PKEY_size(m_key));
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(m_key, nullptr);
 
     if (!ctx)
         return {};
@@ -111,3 +201,5 @@ std::string Rsa::decrypt(const std::vector<unsigned char>& ciphertext)
     EVP_PKEY_CTX_free(ctx);
     return std::string(plaintext.begin(), plaintext.end());
 }
+
+} // namespace bre

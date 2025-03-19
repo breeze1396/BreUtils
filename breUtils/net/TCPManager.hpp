@@ -182,8 +182,8 @@ private:
             asio::write(_socket, asio::buffer(data));
             auto end = std::chrono::system_clock::now();
             std::chrono::microseconds interal = end-now;
-            std::println("sendVideoData: {}:\ninteral: {}us", count++, interal);
-            std::println("time stamp: {}\n\n", end.time_since_epoch().count());
+            // std::println("sendVideoData: {}:\ninteral: {}us", count++, interal);
+            // std::println("time stamp: {}\n\n", end.time_since_epoch().count());
         }
     }    
 
@@ -227,6 +227,7 @@ class TCPReceiver {
 public:
     TCPReceiver(int port):m_port(port), _socket(m_io_context)
     {
+        std::cout << "TCPReceiver listen: " << port <<'\n';
         connect();
         _recv_thread = std::thread([this]{
             recvThread();
@@ -275,6 +276,16 @@ private:
     void connect(){
         tcp::acceptor acceptor(m_io_context, tcp::endpoint(tcp::v4(), m_port));
         _socket = acceptor.accept();
+        // acceptor.async_accept(_socket, [this](const error_code& ec) {
+        //     if (!ec) {
+        //         std::cout << "Connection accepted" << std::endl;
+        //         _recv_thread = std::thread([this]{
+        //             recvThread();
+        //         });
+        //     } else {
+        //         std::cerr << "Accept error: " << ec.message() << std::endl;
+        //     }
+        // });
     }
 
     std::vector<uint8_t> read_data_from_socket() {
@@ -346,7 +357,8 @@ private:
                 _queue.push(std::move(receivedData));
                 _cv.notify_one();
             } catch (const std::exception& e) {
-                std::cerr << "Exception: " << e.what() << std::endl;
+                // std::cerr << "Exception: " << e.what() << std::endl;
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
         }
     }

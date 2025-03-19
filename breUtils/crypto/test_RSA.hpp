@@ -4,33 +4,61 @@
 #include <iostream>
 #include <cassert>
 
-void test_generateKeys()
+#include "RSA.hpp"
+#include <iostream>
+#include <cassert>
+
+void TestGenerateKeys()
 {
-    Rsa rsa;
-    assert(rsa.generateKeys() && "Key generation failed");
-    std::cout << "test_generateKeys passed" << std::endl;
+    bre::RSA rsa;
+    assert(rsa.GenerateKeys());
+    std::string publicKey = rsa.GetPublicKey();
+    std::string privateKey = rsa.GetPrivateKey();
+    assert(!publicKey.empty());
+    assert(!privateKey.empty());
+    std::cout << "TestGenerateKeys passed." << std::endl;
 }
 
-void test_encrypt_decrypt()
+void TestEncryptionDecryption()
 {
-    Rsa rsa;
-    assert(rsa.generateKeys() && "Key generation failed");
+    bre::RSA rsa;
+    assert(rsa.GenerateKeys());
 
     std::string plaintext = "Hello, World!";
-    std::vector<unsigned char> ciphertext = rsa.encrypt(plaintext);
-    assert(!ciphertext.empty() && "Encryption failed");
+    std::vector<unsigned char> ciphertext = rsa.Encrypt(plaintext);
+    assert(!ciphertext.empty());
 
-    std::string decryptedtext = rsa.decrypt(ciphertext);
-    assert(decryptedtext == plaintext && "Decryption failed");
+    std::string decryptedtext = rsa.DecryptStr(ciphertext);
+    assert(decryptedtext == plaintext);
+    std::cout << "TestEncryptionDecryption passed." << std::endl;
+}
 
-    std::cout << "test_encrypt_decrypt passed" << std::endl;
+void TestSetGetKeys()
+{
+    bre::RSA rsa;
+    assert(rsa.GenerateKeys());
+
+    std::string publicKey = rsa.GetPublicKey();
+    std::string privateKey = rsa.GetPrivateKey();
+
+    bre::RSA rsa2;
+    rsa2.SetPublicKey(publicKey);
+    rsa2.SetPrivateKey(privateKey);
+
+    std::string publicKey2 = rsa2.GetPublicKey();
+    std::string privateKey2 = rsa2.GetPrivateKey();
+
+    assert(publicKey == publicKey2);
+    assert(privateKey == privateKey2);
+    std::cout << "TestSetGetKeys passed." << std::endl;
 }
 
 int testRSA()
 {
-    test_generateKeys();
-    test_encrypt_decrypt();
+    TestGenerateKeys();
+    TestEncryptionDecryption();
+    TestSetGetKeys();
 
-    std::cout << "All tests passed" << std::endl;
+    std::cout << "All tests passed." << std::endl;
     return 0;
 }
