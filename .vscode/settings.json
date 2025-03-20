@@ -65,6 +65,8 @@
         "cinttypes": "cpp",
         "queue": "cpp",
         "stack": "cpp",
-        "condition_variable": "cpp"
+        "condition_variable": "cpp",
+        "map": "cpp",
+        "cassert": "cpp"
     }
 }
