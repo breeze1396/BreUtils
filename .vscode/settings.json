@@ -67,6 +67,7 @@
         "stack": "cpp",
         "condition_variable": "cpp",
         "map": "cpp",
-        "cassert": "cpp"
+        "cassert": "cpp",
+        "thread": "cpp"
     }
 }
