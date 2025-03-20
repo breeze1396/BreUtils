@@ -11,18 +11,18 @@ protected:
     Singleton(const Singleton<T>&) = delete;
     Singleton& operator=(const Singleton<T>& st) = delete;
     
-    static std::shared_ptr<T> instance_;
+    static std::shared_ptr<T> _instance;
 public:
     static std::shared_ptr<T> GetInstance() {
         static std::once_flag s_flag;
         std::call_once(s_flag, [&]() {
-            instance_ = shared_ptr<T>(new T);
+            _instance = shared_ptr<T>(new T);
             });
 
-        return instance_;
+        return _instance;
     }
     void PrintAddress() {
-        std::cout << instance_.get() << endl;
+        std::cout << _instance.get() << endl;
     }
     ~Singleton() {
         std::cout << "this is singleton destruct" << std::endl;
@@ -30,7 +30,7 @@ public:
 };
 
 template <typename T>
-std::shared_ptr<T> Singleton<T>::instance_ = nullptr;
+std::shared_ptr<T> Singleton<T>::_instance = nullptr;
 
 
 #endif // BRE_SINGLETON_HPP
