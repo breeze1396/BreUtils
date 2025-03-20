@@ -405,7 +405,6 @@ private:
 // };
 
 
-// ...existing code...
 
 class TCPReceiver {
 public:
@@ -499,12 +498,14 @@ private:
     }
 
 private:
+    int m_port = 0;
+    
     bool _is_closed = false; 
     TCPHeader _header;
     
     asio::io_context m_io_context;
     tcp::acceptor _acceptor;
-    int m_port = 0;
+
 
     std::queue<std::vector<uint8_t>> _queue;
     std::mutex _mutex;

@@ -62,6 +62,9 @@
         "type_traits": "cpp",
         "utility": "cpp",
         "format": "cpp",
-        "cinttypes": "cpp"
+        "cinttypes": "cpp",
+        "queue": "cpp",
+        "stack": "cpp",
+        "condition_variable": "cpp"
     }
 }

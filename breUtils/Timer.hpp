@@ -79,15 +79,18 @@ public:
 
         m_Stop = false;
         m_Thread = std::thread([this, func, is_loop]() {
-            while (is_loop) {
-                std::unique_lock<std::mutex> lock(m_ThreadMutex);
-                bool ret = m_ExpiredConditionVar.wait_for(lock, milliseconds(m_Interval), [this] { return m_Stop.load(); });
-
-                if (ret) {
+            while (!m_Stop) {
+                auto next_wake = steady_clock::now() + milliseconds(m_Interval);
+                {
+                    std::unique_lock<std::mutex> lock(m_ThreadMutex);
+                    if (m_ExpiredConditionVar.wait_until(lock, next_wake, [this] { return m_Stop.load(); })) {
+                        break;
+                    }
+                }
+                func();
+                if (!is_loop) {
                     break;
                 }
-
-                func();
             }
         });
     }
@@ -103,7 +106,7 @@ private:
     std::mutex m_ThreadMutex;
     std::condition_variable m_ExpiredConditionVar;
 
-    unsigned int m_Interval;           // 超时时间
+    unsigned int m_Interval;           // 超时时间 ms
     std::thread m_Thread;
 };
 
