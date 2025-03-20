@@ -179,7 +179,6 @@ private:
     std::vector<uint8_t> buffer_;
 
     std::unordered_map<uint32_t, GroupInfo> m_groups;
-    std::unordered_map<uint32_t, uint64_t>  m_groups_time;  // 组号：时间
 
     Callback callback_;
 };
