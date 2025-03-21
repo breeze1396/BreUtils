@@ -1,4 +1,10 @@
 #pragma once
+/*
+一对一的TCP通信，不能用于多对一的情况，发送端比较完备
+*/
+
+
+#include "TCPHeader.hpp"
 
 #include <queue>
 #include <memory>
@@ -25,62 +31,6 @@ using boost::system::error_code;
 using namespace asio::ip;
 using namespace std::chrono_literals;
 
-
-#pragma pack(push, 1)
-struct TCPHeader {
-// 4 字节  BREZ 标识符
-// 4 字节 文件大小
-// 4 字节 组ID
-// 20字节 保留
-    static const size_t HeaderSize = 32;
-
-    std::vector<uint8_t> Data;
-    uint32_t FileSize;
-    
-    TCPHeader(): Data(HeaderSize) {
-        Data[0] = 'B'; Data[1] = 'R';
-        Data[2] = 'E'; Data[3] = 'Z';
-        this->FileSize = 0; 
-    }
-
-    bool Parse(const std::vector<uint8_t>& data) {
-        if (data.size() < HeaderSize) {
-            std::cout << "Header size is too small: " << data.size() << std::endl;
-            for(auto i : data) {
-                std::cout << i << " ";
-            }
-            std::cerr << "Header size is too small\n";
-            return false;
-        }
-        if(data[0] != 'B' || data[1] != 'R' || data[2] != 'E' || data[3] != 'Z') {
-            std::cerr << "Header is not BREZ\n";
-            return false;
-        }
-        FileSize = *reinterpret_cast<const uint32_t*>(data.data()+4);
-        Data = data;
-        return true;
-    }
-
-    size_t GetHeaderSize() {
-        return Data.size();
-    }
-
-    std::vector<uint8_t> GetHeaderData(uint64_t size) {
-        FileSize = size;
-        std::memcpy(Data.data()+4, &FileSize, sizeof(uint32_t));
-        return Data;
-    }
-
-    void Reset() {
-        Data[0] = 'B';
-        Data[1] = 'R';
-        Data[2] = 'E';
-        Data[3] = 'Z';
-        FileSize = 0;       
-    }
-};
-#pragma pack(pop)
-
 class TCPSender {
 public:
     TCPSender(std::string host, int port): 
@@ -89,10 +39,6 @@ public:
         timer(m_io_context)
     {   
         try{
-            // tcp::resolver resolver(m_io_context);
-            // auto endpoints = resolver.resolve(m_host, std::to_string(m_port));
-
-            // asio::connect(_socket, endpoints);
             connect();
 
             _send_thread = std::thread([this]{
@@ -108,6 +54,7 @@ public:
 
     void connect(){
         int retry = 3;
+        bool connected = false;
         while (retry > 0) {
             try {
                 tcp::resolver resolver(m_io_context);
@@ -119,15 +66,21 @@ public:
                 // // 设置发送超时
                 // asio::socket_base::send_buffer_size send_buffer_size(1024*1024*10);
                 // _socket.set_option(send_buffer_size);
+                connected = true;
                 break;
             } catch (const std::exception& e) {
-                std::cerr << "TCPSender connect error: " << e.what() << std::endl;
                 retry--;
                 if(retry == 0) {
                     throw e;
                 }
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
+        }
+        if(connected) {
+            std::cout << "Connected to " << m_host << ":" << m_port << std::endl;
+        } else {
+            std::cerr << "Failed to connect to " << m_host << ":" << m_port << std::endl;
+            throw std::runtime_error("Failed to connect to " + m_host + ":" + std::to_string(m_port));
         }
     }
 
@@ -251,8 +204,7 @@ private:
 
 class TCPReceiver {
 public:
-    TCPReceiver(int port):m_port(port), _socket(m_io_context)
-    {
+    TCPReceiver(int port):m_port(port), _socket(m_io_context) {
         std::cout << "TCPReceiver listen: " << port <<'\n';
         connect();
         _recv_thread = std::thread([this]{
@@ -302,16 +254,6 @@ private:
     void connect(){
         tcp::acceptor acceptor(m_io_context, tcp::endpoint(tcp::v4(), m_port));
         _socket = acceptor.accept();
-        // acceptor.async_accept(_socket, [this](const error_code& ec) {
-        //     if (!ec) {
-        //         std::cout << "Connection accepted" << std::endl;
-        //         _recv_thread = std::thread([this]{
-        //             recvThread();
-        //         });
-        //     } else {
-        //         std::cerr << "Accept error: " << ec.message() << std::endl;
-        //     }
-        // });
     }
 
     std::vector<uint8_t> read_data_from_socket() {

@@ -68,6 +68,7 @@
         "condition_variable": "cpp",
         "map": "cpp",
         "cassert": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "source_location": "cpp"
     }
 }
