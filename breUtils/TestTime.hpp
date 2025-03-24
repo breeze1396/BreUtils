@@ -1,7 +1,7 @@
 #ifndef TestTime_h
 #define TestTime_h
 
-#include "../Singleton.hpp"
+#include "Singleton.hpp"
 
 #include <functional>
 #include <chrono>
@@ -32,6 +32,14 @@ Inteval：使用单例的时候，每次在需要测试的地方Inteval，对于
 
 class TestTime : public Singleton<TestTime>
 {
+    friend class Singleton<TestTime>;
+
+    struct HitInfo {
+        std::string msg;
+        std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>> time_vec;
+        int count;
+    };
+
 public:
     template<typename Func>
     static void mesture(Func func, bool print = false, std::string_view sv= "") {
@@ -48,43 +56,99 @@ public:
         std::cout << sv <<"Spend: " << elapsed.count() << " ms\n";
     }
 
-    void Hit(std::string msg, bool is_write_file = false, std::source_location loc = std::source_location::current()) {        
-        
-    }
+    void Hit(std::string msg, bool is_print = true, std::source_location loc = std::source_location::current()) {        
+        auto key = loc.function_name() + std::to_string(loc.line()) + std::to_string(loc.column());
 
-    void SetFile(std::string file_name = "TestTime.txt") {
-        m_file = new std::ofstream(file_name);
-        if(!m_file->is_open()) {
-            std::cerr << "Open file failed\n";
+        std::lock_guard<std::mutex> lock(m_mutex);
+        // 如果第一次添加进map, list
+        if(m_hitMap.find(key) == m_hitMap.end()) {
+            HitInfo hitinfo;
+            hitinfo.msg = msg;
+            hitinfo.time_vec.push_back(std::chrono::high_resolution_clock::now());
+            hitinfo.count = 0;
+            m_hitMap[key] = hitinfo;
+            m_hitList.push_back(key);
+        } else {
+            // 修改信息
+            auto& in_hitinfo = m_hitMap[key];
+            in_hitinfo.time_vec.push_back(std::chrono::high_resolution_clock::now());
+            in_hitinfo.count++;
+        }
+
+        if(m_hitList.size() < 2) {
             return;
         }
+
+        auto& cur_hitinfo = m_hitMap[key];
+        int cur_index = 0;
+        int compare_index = 0;
+        int need_count = 0;
+        // 打印时间差，时间差是当前list自己的位置和前一个位置的时间差
+        // 查看自己是否是第一个，如果是第一个，打印自己和最后一个的时间差
+        for(auto& it : m_hitList) {
+            if(it == key) { break; }
+            cur_index++;
+        }
+        compare_index = cur_index - 1;
+        if(compare_index < 0) {
+            compare_index = m_hitList.size() - 1;
+        }
+ 
+        need_count = cur_hitinfo.count;
+        // 根据当前的count，与之前对应count中存放的时间差
+        auto& compare_hitinfo = m_hitMap[m_hitList[compare_index]];
+        auto time_diff = cur_hitinfo.time_vec[need_count] - compare_hitinfo.time_vec[compare_hitinfo.count];
+        
+        std::string out_msg = "Hit: from " + compare_hitinfo.msg + " to " + cur_hitinfo.msg + 
+                            " in Count: " + std::to_string(need_count) + " Spend: ";
+        
+        if(m_time_unit == "ms") {
+            auto elapsed = std::chrono::duration<double, std::milli>(time_diff).count();
+            out_msg += std::to_string(elapsed) + " ms\n";
+        } else if(m_time_unit == "s") {
+            auto elapsed = std::chrono::duration<double>(time_diff).count();
+            out_msg += std::to_string(elapsed) + " s\n";
+        } else {
+            auto elapsed = std::chrono::duration<double, std::micro>(time_diff).count();
+            out_msg += std::to_string(elapsed) + " us\n";
+        }
+
+        if(is_print) {
+            std::cout << out_msg;
+        }
+
+        if(m_is_write_file) {
+            *m_file << out_msg;
+        }
+    }
+
+    // "us", "ms", "s"
+    void HitSetTimeUnit(std::string unit) {
+        m_time_unit = unit;
+    }
+
+    void HitSetWriteFile(std::string file_name) {
+        m_file = new std::ofstream(file_name);
         m_is_write_file = true;
     }
 
-    void Inteval(std::string msg, std::source_location loc = std::source_location::current()) {
-        // 先查看map中是否有这个msg, 如果有说明是第二次，打印时间差，如果没有说明是第一次，记录时间
-        auto key = loc.function_name();
-        if(m_intevalMap.find(key) != m_intevalMap.end()) {
-            auto now = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double, std::micro> elapsed = now - m_intevalMap[key];
-            std::string out_msg = "Inteval: " + key + " " + msg + " Spend: " + std::to_string(elapsed.count()) + " us\n";
-            std::cout << out_msg;
-        } else {
-            m_intevalMap[key] = std::chrono::high_resolution_clock::now();
-        }
+    void HitClear() {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_hitMap.clear();
+        m_hitList.clear();
     }
 
 private:
-    TestTime() {
-        m_is_write_file = false;
-    }
     ~TestTime() {
         delete m_file;
     }
+
+    TestTime() {
+        m_is_write_file = false;
+    }
+
     TestTime(const TestTime&) = delete;
     TestTime& operator=(const TestTime&) = delete;
-
-    friend class Singleton<TestTime>;
 
 private:
     std::string m_lastHitMsg;
@@ -94,15 +158,19 @@ private:
     std::map<std::string, std::chrono::time_point<std::chrono::high_resolution_clock>> m_intevalMap;
 
     // 针对Hit的
-    // hitmap_count， key是loc，value是次数；
-    // hitmap_time， key是loc，value是时间
+    // hitmap_count， key是loc
     // hitlist，记录hit的顺序
-    std::map<std::string, int> m_hitMapCount;
-    std::map<std::string, std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>>> m_hitMapTime;
+    std::map<std::string, HitInfo> m_hitMap;
     std::vector<std::string> m_hitList;
+
 
     std::ofstream* m_file;
     bool m_is_write_file = false;
+
+    // 输出时间差单位
+    std::string m_time_unit = "ms";
+
+    std::mutex m_mutex;
 };
 
 
