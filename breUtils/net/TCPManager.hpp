@@ -112,11 +112,12 @@ public:
         // 写文件
         auto now = std::chrono::system_clock::now();
         asio::write(_socket, asio::buffer((uint8_t*)data, size));
-        static int count = 0;
-        auto end = std::chrono::system_clock::now();
-        std::chrono::microseconds interal = end-now;
-        std::println("SendDirect: {}:\ninteral: {}us", count++, interal);
-        std::println("time stamp: {}\n\n", end.time_since_epoch().count());
+
+        // static int count = 0;
+        // auto end = std::chrono::system_clock::now();
+        // std::chrono::microseconds interal = end-now;
+        // std::println("SendDirect: {}:\ninteral: {}us", count++, interal);
+        // std::println("time stamp: {}\n\n", end.time_since_epoch().count());
     }
 
     void Close() {
@@ -160,10 +161,10 @@ private:
             static int count = 0;
             auto now = std::chrono::system_clock::now();
             asio::write(_socket, asio::buffer(data));
-            auto end = std::chrono::system_clock::now();
-            auto interal = std::chrono::duration_cast<std::chrono::microseconds>(end-now);
-            std::println("sendVideoData: {}:\ninteral: {}us", count++, interal.count());
-            std::println("time stamp: {}\n\n", end.time_since_epoch().count());
+            // auto end = std::chrono::system_clock::now();
+            // auto interal = std::chrono::duration_cast<std::chrono::microseconds>(end-now);
+            // std::println("sendVideoData: {}:\ninteral: {}us", count++, interal.count());
+            // std::println("time stamp: {}\n\n", end.time_since_epoch().count());
         }
     }    
 

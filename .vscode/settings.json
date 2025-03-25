@@ -69,6 +69,7 @@
         "map": "cpp",
         "cassert": "cpp",
         "thread": "cpp",
-        "source_location": "cpp"
+        "source_location": "cpp",
+        "future": "cpp"
     }
 }

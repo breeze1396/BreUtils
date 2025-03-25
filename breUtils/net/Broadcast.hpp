@@ -71,9 +71,9 @@ public:
         do_receive();
     }
 
-    std::string Receive(int timeout_s = -1) {
+    std::string Receive(int timeout_ms = -1) {
         std::string msg;
-        _queue.Pop(msg, timeout_s);
+        _queue.Pop(msg, timeout_ms);
         return msg;
     }
 
