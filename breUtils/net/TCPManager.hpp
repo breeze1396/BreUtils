@@ -1,4 +1,10 @@
 #pragma once
+/*
+一对一的TCP通信，不能用于多对一的情况，发送端比较完备
+*/
+
+
+#include "TCPHeader.hpp"
 
 #include <queue>
 #include <memory>
@@ -24,62 +30,6 @@ using boost::system::error_code;
 
 using namespace asio::ip;
 using namespace std::chrono_literals;
-
-
-#pragma pack(push, 1)
-struct TCPHeader {
-// 4 字节  BREZ 标识符
-// 4 字节 文件大小
-// 4 字节 组ID
-// 20字节 保留
-    static const size_t HeaderSize = 32;
-
-    std::vector<uint8_t> Data;
-    uint32_t FileSize;
-    
-    TCPHeader(): Data(HeaderSize) {
-        Data[0] = 'B'; Data[1] = 'R';
-        Data[2] = 'E'; Data[3] = 'Z';
-        this->FileSize = 0; 
-    }
-
-    bool Parse(const std::vector<uint8_t>& data) {
-        if (data.size() < HeaderSize) {
-            std::cout << "Header size is too small: " << data.size() << std::endl;
-            for(auto i : data) {
-                std::cout << i << " ";
-            }
-            std::cerr << "Header size is too small\n";
-            return false;
-        }
-        if(data[0] != 'B' || data[1] != 'R' || data[2] != 'E' || data[3] != 'Z') {
-            std::cerr << "Header is not BREZ\n";
-            return false;
-        }
-        FileSize = *reinterpret_cast<const uint32_t*>(data.data()+4);
-        Data = data;
-        return true;
-    }
-
-    size_t GetHeaderSize() {
-        return Data.size();
-    }
-
-    std::vector<uint8_t> GetHeaderData(uint64_t size) {
-        FileSize = size;
-        std::memcpy(Data.data()+4, &FileSize, sizeof(uint32_t));
-        return Data;
-    }
-
-    void Reset() {
-        Data[0] = 'B';
-        Data[1] = 'R';
-        Data[2] = 'E';
-        Data[3] = 'Z';
-        FileSize = 0;       
-    }
-};
-#pragma pack(pop)
 
 class TCPSender {
 public:
@@ -135,10 +85,18 @@ public:
         // 写文件
         auto now = std::chrono::system_clock::now();
         asio::write(_socket, asio::buffer((uint8_t*)data, size));
+<<<<<<< HEAD
         static int count = 0;
         auto end = std::chrono::system_clock::now();
         auto interal = std::chrono::duration_cast<std::chrono::microseconds>(end - now);
         // std::println("SendDirect: {}:\ninteral: {}us", count++, interal.count());
+=======
+
+        // static int count = 0;
+        // auto end = std::chrono::system_clock::now();
+        // std::chrono::microseconds interal = end-now;
+        // std::println("SendDirect: {}:\ninteral: {}us", count++, interal);
+>>>>>>> 055da1d71142e4fd2f7528a9c96e96c75aea3643
         // std::println("time stamp: {}\n\n", end.time_since_epoch().count());
     }
 
@@ -164,25 +122,6 @@ public:
     }
 
 private:
-    void connect(){
-        int retry = 3;
-        while (retry > 0) {
-            try {
-                tcp::resolver resolver(m_io_context);
-                auto endpoints = resolver.resolve(m_host, std::to_string(m_port));
-                asio::connect(_socket, endpoints);
-                break;
-            } catch (const std::exception& e) {
-                std::cerr << "TCPSender connect error: " << e.what() << std::endl;
-                retry--;
-                if(retry == 0) {
-                    throw e;
-                }
-                std::this_thread::sleep_for(std::chrono::seconds(1));
-            }
-        }
-    }
-
     void sendThread() {
         while (true) {
             std::unique_lock<std::mutex> lock(_mutex);
@@ -202,21 +141,22 @@ private:
             static int count = 0;
             auto now = std::chrono::system_clock::now();
             asio::write(_socket, asio::buffer(data));
+<<<<<<< HEAD
             auto end = std::chrono::system_clock::now();
             std::chrono::microseconds interal = std::chrono::duration_cast<std::chrono::microseconds>(end - now);
             // std::println("sendVideoData: {}:\ninteral: {}us", count++, interal);
+=======
+            // auto end = std::chrono::system_clock::now();
+            // auto interal = std::chrono::duration_cast<std::chrono::microseconds>(end-now);
+            // std::println("sendVideoData: {}:\ninteral: {}us", count++, interal.count());
+>>>>>>> 055da1d71142e4fd2f7528a9c96e96c75aea3643
             // std::println("time stamp: {}\n\n", end.time_since_epoch().count());
         }
     }    
 
     void startPing(){
         timer.expires_after(30s);
-        timer.async_wait([&](const std::error_code& ec) {
-            if(ec) {
-                std::cerr << "Ping error: " << ec.message() << std::endl;
-                return;
-            }
-
+        timer.async_wait([&](const std::error_code&) {
             if(_queue.empty()) {
                 std::string ping = "ping";
                 Send(ping);
@@ -246,12 +186,12 @@ private:
 
     std::thread _send_thread;
     asio::steady_timer timer;
-
 };
 
 
 class TCPReceiver {
 public:
+<<<<<<< HEAD
     using Shared = std::shared_ptr<TCPReceiver>;
     static Shared Create(int port) {
         return std::make_shared<TCPReceiver>(port);
@@ -259,6 +199,9 @@ public:
 
     TCPReceiver(int port):m_port(port), _socket(m_io_context)
     {
+=======
+    TCPReceiver(int port):m_port(port), _socket(m_io_context) {
+>>>>>>> 055da1d71142e4fd2f7528a9c96e96c75aea3643
         std::cout << "TCPReceiver listen: " << port <<'\n';
         connect();
         _recv_thread = std::thread([this]{
@@ -285,9 +228,13 @@ public:
 
     std::vector<uint8_t> Get() {
         std::unique_lock<std::mutex> lock(_mutex);
-        _cv.wait(lock, [this]{ return !_queue.empty(); });
+        _cv.wait(lock, [this]{
+            return !_queue.empty();
+        });
 
-        if (_queue.empty()) { return {}; }
+        if (_queue.empty()) {
+            return {};
+        }
 
         auto data = std::move(_queue.front());
         _queue.pop();
@@ -296,6 +243,7 @@ public:
 
     std::string GetStr() {
         auto data = Get();
+        std::cout << "GetStr: " << std::string(data.begin(), data.end()) << std::endl;
         return std::string(data.begin(), data.end());
     }
 
@@ -303,6 +251,7 @@ private:
     void connect(){
         tcp::acceptor acceptor(m_io_context, tcp::endpoint(tcp::v4(), m_port));
         _socket = acceptor.accept();
+<<<<<<< HEAD
         // acceptor.async_accept(_socket, [this](const error_code& ec) {
         //     if (!ec) {
         //         std::cout << "Connection accepted" << std::endl;
@@ -313,6 +262,8 @@ private:
         //         std::cerr << "Accept error: " << ec.message() << std::endl;
         //     }
         // });
+=======
+>>>>>>> 055da1d71142e4fd2f7528a9c96e96c75aea3643
     }
 
     std::vector<uint8_t> read_data_from_socket() {
@@ -404,6 +355,7 @@ private:
     std::thread _recv_thread;   
 };
 
+<<<<<<< HEAD
 
 
 // class TCPReceiver {
@@ -513,3 +465,5 @@ private:
 
 //     std::thread _recv_thread;   
 // };
+=======
+>>>>>>> 055da1d71142e4fd2f7528a9c96e96c75aea3643

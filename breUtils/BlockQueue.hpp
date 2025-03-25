@@ -1,5 +1,4 @@
-#ifndef BLOCKQUEUE_HPP
-#define BLOCKQUEUE_HPP
+#pragma once
 
 #include <mutex>
 #include <queue>
@@ -69,6 +68,14 @@ public:
         queue.push(item);
         condConsumer.notify_one();
     }
+    void Push(const T &&item) {
+        std::unique_lock<std::mutex> locker(mtx);
+        while(queue.size() >= capacity) {       // 防止虚假唤醒
+            condProducer.wait(locker);
+        }
+        queue.push(item);
+        condConsumer.notify_one();
+    }
 
     bool Pop(T &item)  {
         std::unique_lock<std::mutex> locker(mtx);
@@ -84,10 +91,10 @@ public:
         return true;
     }
 
-    bool Pop(T &item, int timeout)  {
+    bool Pop(T &item, int timeout_ms)  {
         std::unique_lock<std::mutex> locker(mtx);
         while(queue.empty()){
-            if(condConsumer.wait_for(locker, std::chrono::seconds(timeout)) 
+            if(condConsumer.wait_for(locker, std::chrono::milliseconds(timeout_ms)) 
                     == std::cv_status::timeout){
                 return false;
             }
@@ -116,4 +123,3 @@ private:
 };
 
 } // namespace bre
-#endif // BLOCKQUEUE_HPP
