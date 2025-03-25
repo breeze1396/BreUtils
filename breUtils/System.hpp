@@ -1,12 +1,13 @@
 #pragma once
 
-#include <pthread.h>
-#include <mach/mach.h>
 
 namespace bre
 {
 // 针对POSIX线程的实时优先级设置
 #if defined(__APPLE__)
+#include <pthread.h>
+#include <mach/mach.h>
+
 inline int set_realtime_priority() {
     mach_port_t thread = pthread_mach_thread_np(pthread_self());
     thread_time_constraint_policy_data_t policy;
@@ -20,6 +21,8 @@ inline int set_realtime_priority() {
     // mach_port_deallocate(mach_task_self(), thread);
 }
 #elif defined(__linux__)
+#include <pthread.h>
+#include <mach/mach.h>
 inline int set_realtime_priority() {
     struct sched_param param;
     param.sched_priority = 99; // 1~99, 99为最高优先级

@@ -10,6 +10,8 @@
 #include <chrono>
 #include <iomanip>
 #include <atomic>
+#include <unordered_map>
+#include <queue>
 
 #ifdef ASIO_STANDALONE
 #include <asio.hpp>
@@ -26,8 +28,8 @@ using namespace boost;
 using asio::ip::udp;
 using tcp = asio::ip::tcp;
 
-constexpr std::string multicast_address = "225.6.7.4";
-constexpr unsigned short multicast_port = 8674;
+constexpr  const char* MulticastAddress = "225.6.7.4";
+constexpr unsigned short MulticastPort = 8674;
 
 struct HostInfo {
     std::string state; // 0: 加入 1: 退出
@@ -86,10 +88,10 @@ struct HostInfo {
 
 class MulticastSender {
 public:
-    MulticastSender(asio::io_context& io_context, const std::string& multicast_address)
+    MulticastSender(asio::io_context& io_context, const std::string& multicast_address, int port)
         : _socket(io_context) {
 
-        _sendto_endpoint = udp::endpoint(asio::ip::make_address_v4(multicast_address), multicast_port);
+        _sendto_endpoint = udp::endpoint(asio::ip::make_address_v4(multicast_address), port);
         _socket.open(_sendto_endpoint.protocol());
         // _socket.set_option(asio::socket_base::broadcast(true));
         _socket.set_option(asio::socket_base::reuse_address(true));
@@ -99,7 +101,7 @@ public:
     }
 
     void Send(const std::string& message) {
-        std::shared_ptr<std::string> message_ptr = std::make_shared<std::string>(message);
+        auto message_ptr = std::make_shared<std::string>(message);
         _socket.async_send_to(asio::buffer(*message_ptr), _sendto_endpoint,
         [&](std::error_code ec, std::size_t /*bytes_sent*/) {
             if (ec) {
@@ -116,32 +118,45 @@ private:
 
 class MulticastReceiver {
 public:
+	using Shared = std::shared_ptr<MulticastReceiver>;
+
+	static Shared Create(asio::io_context& io_context, const std::string& multicast_address, unsigned short port) {
+		return std::make_shared<MulticastReceiver>(io_context, multicast_address, port);
+	}
+
     MulticastReceiver(asio::io_context& io_context, const std::string& multicast_address, unsigned short port)
         : _socket(io_context) {
-        _listen_endpoint = udp::endpoint(asio::ip::make_address_v4(multicast_address), port);
-        _socket.open(_listen_endpoint.protocol());
-        _socket.set_option(asio::socket_base::reuse_address(true));
-        _socket.bind(_listen_endpoint);
+        try {
 
-        _socket.set_option(asio::ip::multicast::join_group(asio::ip::make_address_v4(multicast_address)));
+            _listen_endpoint = udp::endpoint(asio::ip::address_v4::any(), port);
+            _socket.open(_listen_endpoint.protocol());
+            _socket.set_option(asio::socket_base::reuse_address(true));
+            _socket.bind(_listen_endpoint);
+
+            _socket.set_option(asio::ip::multicast::join_group(asio::ip::make_address_v4(multicast_address)));
+        } catch (const std::exception& e) {
+			std::cout << "MulticastReceiver err: " << e.what() << std::endl;
+        }
     }
 
     void Receive() {
         auto recv_buffer = std::make_shared<std::array<char, 1024>>();
-        _socket.async_receive_from(asio::buffer(*recv_buffer), _listen_endpoint,
+		_socket.async_receive_from(asio::buffer(*recv_buffer)
+            , _listen_endpoint,
         [this, recv_buffer](std::error_code ec, std::size_t bytes_recvd) {
-            if (ec) {
-                std::cout << "Receive err: " << ec.message() << std::endl;
-                return;
-            }
-            auto msg = std::string(recv_buffer->data(), bytes_recvd);
-            // std::cout << "Received: size:" << bytes_recvd << " " << msg << std::endl;
+            //if (ec) {
+            //    std::cout << "Receive err: " << ec.message() << std::endl;
+            //    return;
+            //}
+            //auto msg = std::string(recv_buffer->data(), bytes_recvd);
+            // std::cout << "Received: size:" << bytes_recvd << " " << recv_buffer->data()<< std::endl;
 
-            {
-                std::lock_guard<std::mutex> lock(_message_mutex);
-                _message_queue.push({recv_buffer->begin(), recv_buffer->begin() + bytes_recvd});
-                _message_cv.notify_one();
-            }
+    //        {
+    //            std::lock_guard<std::mutex> lock(_message_mutex);
+				//std::vector<uint8_t> vec(recv_buffer->begin(), recv_buffer->begin() + bytes_recvd);
+    //            _message_queue.push(vec);
+    //            _message_cv.notify_one();
+    //        }
 
             Receive();
         });
@@ -189,9 +204,11 @@ private:
 
 class Finder {
 public:
-    Finder(): _multicast_endpoint(asio::ip::make_address_v4(_multicast_address), multicast_port),
-        _sender(_io_context, _multicast_address),
-        _receiver(_io_context, _multicast_address, multicast_port) {
+    Finder()
+		: _multicast_address(MulticastAddress)
+        , _multicast_endpoint(asio::ip::make_address_v4(_multicast_address), MulticastPort)
+        ,_sender(_io_context, _multicast_address, MulticastPort)
+        ,_receiver(_io_context, _multicast_address, MulticastPort) {
         _is_stop = false;
 
         initSelf();
@@ -262,7 +279,6 @@ private:
 
 
     void receive_thread() {
-        std::array<char, 1024> recv_buffer;
         while (true) {
             if(_is_stop) {
                 break;
@@ -328,7 +344,7 @@ private:
     std::vector<std::string> _local_ips; // 本机的所有ip
     std::unordered_map<std::string, HostInfo> _hosts; // 所有的主机信息 key: ip
 
-    std::string _multicast_address = multicast_address;
+    std::string _multicast_address = MulticastAddress;
 
     // 网络相关
     asio::io_context _io_context;
@@ -341,16 +357,16 @@ private:
     std::thread _receive_thread;
 };
 
-void test_mutilcast_sender_receiver(){
-     asio::io_context io_context;
-    MulticastSender sender(io_context, multicast_address);
+void test_mutilcast_sender_receiver() {
+    asio::io_context io_context;
+    MulticastSender sender(io_context, MulticastAddress, MulticastPort);
 
-    MulticastReceiver receiver(io_context, multicast_address, multicast_port);
+    MulticastReceiver receiver(io_context, MulticastAddress, MulticastPort);
     receiver.Receive();
 
 
     std::thread t([&]{
-        for(int i = 0; i < 5; ++i) {
+        for(int i = 0; i < 105; ++i) {
             sender.Send("123456abc");
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
@@ -361,7 +377,7 @@ void test_mutilcast_sender_receiver(){
 }
 
 
-inline int test() {
+inline int testFinder() {
     Finder finder;
 
     std::thread ([&]{
