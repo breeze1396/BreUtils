@@ -8,6 +8,7 @@ using error_code = asio::error_code;
 #include <boost/asio.hpp>
 namespace asio = boost::asio;
 using boost::system::error_code;
+using error_code = boost::system::error_code;
 #endif
 
 #include "AsioIOContextPool.hpp"
@@ -128,7 +129,7 @@ private:
             new_session->Start();
             _sessions.insert(std::make_pair(new_session->GetSessionId(), new_session));
         } else {
-            std::cout << "session accept failed, error is " << error.what() << std::endl;
+            std::cout << "session accept failed, error is " << error.message() << std::endl;
         }
     
         startAccept();

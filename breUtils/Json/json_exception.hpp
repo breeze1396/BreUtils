@@ -1,7 +1,8 @@
+#pragma once
 #ifndef JSON_EXCEPTION_HPP
 #define JSON_EXCEPTION_HPP
 
-// JsonParseException Àà£¬ÓÃÓÚJSON ½âÎö ºÍ Éú³É ÖĞµÄ´íÎó´¦Àí
+// JsonParseException ç±»ï¼Œç”¨äºJSON è§£æ å’Œ ç”Ÿæˆ ä¸­çš„é”™è¯¯å¤„ç†
 
 #include <exception>
 #include <source_location>
@@ -9,31 +10,41 @@
 
 namespace bre {
     namespace json {
-        // ¶¨ÒåJSONÒì³£µÄÀàĞÍ
+
+
+        // å®šä¹‰JSONå¼‚å¸¸çš„ç±»å‹
         enum class JsonErrorType {
-            SyntaxError,    // Óï·¨´íÎó
-            TypeError,      // ÀàĞÍ´íÎó£¨Èç Ô¤ÆÚÊı×éÈ´µÃµ½¶ÔÏó£©
-            ValueError,     // Öµ´íÎó  £¨Èç ÎŞĞ§µÄÊı×Ö¸ñÊ½£©
-            KeyError,       // ¼ü´íÎó  £¨Èç ¶ÔÏóÖĞÈ±Ê§±ØĞèµÄ¼ü£©
-            UnknownError    // Î´Öª´íÎó
+            SyntaxError,    // è¯­æ³•é”™è¯¯
+            TypeError,      // ç±»å‹é”™è¯¯ï¼ˆå¦‚ é¢„æœŸæ•°ç»„å´å¾—åˆ°å¯¹è±¡ï¼‰
+            ValueError,     // å€¼é”™è¯¯  ï¼ˆå¦‚ æ— æ•ˆçš„æ•°å­—æ ¼å¼ï¼‰
+            KeyError,       // é”®é”™è¯¯  ï¼ˆå¦‚ å¯¹è±¡ä¸­ç¼ºå¤±å¿…éœ€çš„é”®ï¼‰
+            UnknownError    // æœªçŸ¥é”™è¯¯
         };
 
 
         class JsonParseException : public std::exception {
         public:
-            JsonParseException(const std::string& message, JsonErrorType type = JsonErrorType::UnknownError)
-                : message_(message), error_type_(type) {}
+            JsonParseException(const std::string& message, JsonErrorType type = JsonErrorType::UnknownError,
+                               const std::source_location& location = std::source_location::current())
+                : error_type_(type) {
+                    #ifdef NDEBUG
+                    message_ = message;
+                    #else
+                    message_ = locationMsg(location) + "\n" + message;
+                    #endif
+                    
+                }
 
             const char* what() const noexcept override {
                 return message_.c_str();
             }
 
-            // ·µ»Ø´íÎóÀàĞÍ
+            // è¿”å›é”™è¯¯ç±»å‹
             JsonErrorType errorType() const noexcept {
                 return error_type_;
             }
 
-            // ¾²Ì¬·½·¨£º·µ»ØÌØ¶¨µÄÒì³£¶ÔÏó
+            // é™æ€æ–¹æ³•ï¼šè¿”å›ç‰¹å®šçš„å¼‚å¸¸å¯¹è±¡
             static JsonParseException SyntaxError(const std::string& details,
                 const std::source_location& location = std::source_location::current()) {
                 return JsonParseException("Syntax Error: " + details + " at " + locationMsg(location), JsonErrorType::SyntaxError);

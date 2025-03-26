@@ -1,3 +1,4 @@
+#pragma once
 #ifndef JSON_GENERATOR_HPP
 #define JSON_GENERATOR_HPP
 
@@ -11,7 +12,7 @@ namespace json {
     public:
         Generator() = default;
 
-        // Éú³Éjson×Ö·û´®, prettyÎªfalseÊ±£¬ÎªÑ¹Ëõ×´Ì¬
+        // ç”Ÿæˆ JSON å­—ç¬¦ä¸² (pretty = true è¡¨ç¤ºç”Ÿæˆå¸¦ç¼©è¿›çš„å­—ç¬¦ä¸²)
         static std::string generate(const Value& val, bool pretty = true, int indentWidth = 2) {
             Generator generator(pretty ? indentWidth : 0);
             return generator.generateValue(val, 0);
@@ -20,26 +21,23 @@ namespace json {
     private:
         explicit Generator(int indentWidth) : indentWidth_(indentWidth) {}
 
-        // Éú³ÉËõ½ø×Ö·û´®
         std::string indent(int level) const {
             return std::string(level * indentWidth_, ' ');
         }
 
-        // µİ¹éÉú³É JSON£¬ÈôÎŞËõ½ø¿í¶È¼´ÎªÑ¹Ëõ¸ñÊ½
         std::string generateValue(const Value& val, int level) {
             switch (val.type()) {
             case Type::Null:   return "null";
-            case Type::Bool:   return val.asBool() ? "true" : "false";
-            case Type::Int:    return std::to_string(val.asInt());
-            case Type::Double: return std::to_string(val.asDouble());
-            case Type::String: return "\"" + escapeString(val.asString()) + "\"";
-            case Type::Array:  return generateArray(val.asArray(), level + 1);
-            case Type::Object: return generateObject(val.asObject(), level + 1);
+            case Type::Bool:   return val.AsBool() ? "true" : "false";
+            case Type::Int:    return std::to_string(val.AsInt());
+            case Type::Double: return std::to_string(val.AsDouble());
+            case Type::String: return "\"" + escapeString(val.AsString()) + "\"";
+            case Type::Array:  return generateArray(val.AsArray(), level + 1);
+            case Type::Object: return generateObject(val.AsObject(), level + 1);
             default: throw JsonParseException("Invalid Value type");
             }
         }
 
-        // Éú³É JSON `Êı×é` ×Ö·û´®
         std::string generateArray(const Value::Array& array, int level) {
             if (array.empty()) return "[]";
 
@@ -60,7 +58,7 @@ namespace json {
             return result;
         }
 
-        // Éú³É JSON `¶ÔÏó` ×Ö·û´®
+        // é”Ÿæ–¤æ‹·é”Ÿæ–¤æ‹· JSON `é”Ÿæ–¤æ‹·é”Ÿæ–¤æ‹·` é”Ÿè¡—å‡¤æ‹·é”Ÿæ–¤æ‹·
         std::string generateObject(const Value::Object& object, int level) {
             if (object.empty()) return "{}";
 
@@ -82,7 +80,7 @@ namespace json {
             return result;
         }
 
-        // ×ªÒå `×Ö·û´®` ÖĞµÄÌØÊâ×Ö·û
+        // è½¬é”Ÿæ–¤æ‹· `é”Ÿè¡—å‡¤æ‹·é”Ÿæ–¤æ‹·` é”Ÿå«ç¢‰æ‹·é”Ÿæ–¤æ‹·é”Ÿæ–¤æ‹·é”Ÿè¡—å‡¤æ‹·
         std::string escapeString(const std::string& s) {
             std::string escaped;
             for (char c : s) {
@@ -100,8 +98,9 @@ namespace json {
             return escaped;
         }
 
-        int indentWidth_; // Ëõ½ø¿í¶È
+        int indentWidth_; // é”Ÿæ–¤æ‹·é”Ÿæ–¤æ‹·é”Ÿæ–¤æ‹·é”Ÿæ–¤æ‹·
     };
 } // namespace json
 } // namespace bre
+
 #endif // JSON_GENERATOR_HPP

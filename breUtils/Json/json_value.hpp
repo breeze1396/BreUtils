@@ -10,6 +10,7 @@
 #include <variant>
 #include <optional>
 #include <stdexcept>
+#include <limits>
 
 namespace bre {
 
@@ -28,9 +29,10 @@ namespace json {
 
         ~Value() = default;
 
-        Value(bool b) : type_(Type::Bool), value_(b) {}
+        explicit Value(bool b) : type_(Type::Bool), value_(b) {}
         Value(int i) : type_(Type::Int), value_(i) {}
-        Value(double d) : type_(Type::Double), value_(d) {}
+        explicit Value(double d) : type_(Type::Double), value_(d) {}
+        Value(const char* s) : type_(Type::String), value_(std::string(s)) {}
         Value(const std::string& s) : type_(Type::String), value_(s) {}
         Value(const Array& arr) : type_(Type::Array), value_(arr) {}
         Value(const Object& obj) : type_(Type::Object), value_(obj) {}
@@ -41,6 +43,7 @@ namespace json {
             }
             type_ = other.type_;
             value_ = other.value_;
+            return *this;
         }
 
         Value& operator=(Value&& other) noexcept {
@@ -51,157 +54,160 @@ namespace json {
             return *this;
         }
 
+        // ÈáçËΩΩÊØîËæÉËøêÁÆóÁ¨¶
+        bool operator==(const Value& other) const;
+
         Type type() const {
             return type_;
         }
 
-        void clear() {
+        void Clear() {
             type_ = Type::Null;
             value_ = std::monostate{};
         }
 
-        void setNull() {
-            clear();
+        void SetNull() {
+            Clear();
         }
 
-        void setBool(bool b) {
+        void SetBool(bool b) {
             type_ = Type::Bool;
             value_ = b;
         }
 
-        void setInt(int i) {
+        void SetInt(int i) {
             type_ = Type::Int;
             value_ = i;
         }
 
-        void setDouble(double d) {
+        void SetDouble(double d) {
             type_ = Type::Double;
             value_ = d;
         }
 
-        void setString(const std::string& s) {
+        void SetString(const std::string& s) {
             type_ = Type::String;
             value_ = s;
         }
 
-        void setArray() {
+        void SetArray() {
             type_ = Type::Array;
             value_ = Array{};
         }
 
-        void setObject() {
+        void SetObject() {
             type_ = Type::Object;
             value_ = Object{};
         }
 
-        // ¿‡–Õ◊™ªª∫Ø ˝
-        bool asBool() const {
+        // Á±ªÂûãËΩ¨Êç¢ÂáΩÊï∞
+        bool AsBool() const {
             checkType(Type::Bool);
             return std::get<bool>(value_);
         }
 
-        int asInt() const {
+        int AsInt() const {
             checkType(Type::Int);
-            return std::get<int>(value_);
+            return std::get<int64_t>(value_);
         }
 
-        double asDouble() const {
+        double AsDouble() const {
             checkType(Type::Double);
             return std::get<double>(value_);
         }
 
-        std::string asString() {
+        std::string AsString() {
             checkType(Type::String);
             return std::get<std::string>(value_);
         }
 
-        const std::string asString()const {
+        const std::string AsString()const {
             checkType(Type::String);
             return std::get<std::string>(value_);
         }
 
-        Array asArray() {
+        Array AsArray() {
             checkType(Type::Array);
             return std::get<Array>(value_);
         }
-        const Array asArray()const {
+        const Array AsArray()const {
             checkType(Type::Array);
             return std::get<Array>(value_);
         }
 
-        Object asObject() {
+        Object AsObject() {
             checkType(Type::Object);
             return std::get<Object>(value_);
         }
 
 
-        const Object asObject()const {
+        const Object AsObject()const {
             checkType(Type::Object);
             return std::get<Object>(value_);
         }
 
-        bool isNull() const {
+        bool IsNull() const {
             return type_ == Type::Null;
         }
 
-        bool isBool() const {
+        bool IsBool() const {
             return type_ == Type::Bool;
         }
 
-        bool isInt() const {
+        bool IsInt() const {
             return type_ == Type::Int;
         }
 
-        bool isUInt() const {
-            return isInt() && asInt() >= 0;
+        bool IsUInt() const {
+            return IsInt() && AsInt() >= 0;
         }
 
-        bool isIntegral() const {
-            return isInt() || isUInt();
+        bool IsIntegral() const {
+            return IsInt() || IsUInt();
         }
 
-        bool isDouble() const {
+        bool IsDouble() const {
             return type_ == Type::Double;
         }
 
-        bool isNumeric() const {
-            return isIntegral() || isDouble();
+        bool IsNumeric() const {
+            return IsIntegral() || IsDouble();
         }
 
-        bool isString() const {
+        bool IsString() const {
             return type_ == Type::String;
         }
 
-        bool isArray() const {
+        bool IsArray() const {
             return type_ == Type::Array;
         }
 
-        bool isObject() const {
+        bool IsObject() const {
             return type_ == Type::Object;
         }
 
-        bool isConvertibleTo(Type other) const {
+        bool IsConvertibleTo(Type other) const {
             switch (other) {
             case Type::Null:
-                return isNull();
+                return IsNull();
             case Type::Bool:
-                return isBool();
+                return IsBool();
             case Type::Int:
-                return isInt();
+                return IsInt();
             case Type::Double:
-                return isNumeric();
+                return IsNumeric();
             case Type::String:
-                return isString();
+                return IsString();
             case Type::Array:
-                return isArray();
+                return IsArray();
             case Type::Object:
-                return isObject();
+                return IsObject();
             default:
                 return false;
             }
         }
 
-        bool empty() const {
+        bool Empty() const {
             switch (type_) {
             case Type::Null:
                 return true;
@@ -223,12 +229,12 @@ namespace json {
         }
 
 
-        void resize(int newSize) {
+        void Resize(int newSize) {
             checkType(Type::Array);
             std::get<Array>(value_).resize(newSize);
         }
 
-        //  ˝◊È∫Õ∂‘œÛ∑√Œ 
+        // Êï∞ÁªÑÂíåÂØπË±°ËÆøÈóÆ
         Value& operator[](size_t index) {
             checkType(Type::Array);
             Array& arr = std::get<Array>(value_);
@@ -260,17 +266,18 @@ namespace json {
             const Object& obj = std::get<Object>(value_);
             auto it = obj.find(key);
             if (it == obj.end()) {
-                return Value(); // ∑µªÿ“ª∏ˆø’÷µ
+                static const Value emptyValue;
+                return emptyValue; // ËøîÂõû‰∏Ä‰∏™Á©∫ÂÄº
             }
             return it->second;
         }
 
-        void append(const Value& val) {
+        void Append(const Value& val) {
             checkType(Type::Array);
             std::get<Array>(value_).push_back(val);
         }
 
-        void remove(size_t index) {
+        void Remove(size_t index) {
             checkType(Type::Array);
             Array& arr = std::get<Array>(value_);
             if (index >= arr.size()) {
@@ -279,13 +286,13 @@ namespace json {
             arr.erase(arr.begin() + index);
         }
 
-        void remove(const std::string& key) {
+        void Remove(const std::string& key) {
             checkType(Type::Object);
             Object& obj = std::get<Object>(value_);
             obj.erase(key);
         }
 
-        size_t size() const {
+        size_t Size() const {
             switch (type_) {
             case Type::Array:
                 return std::get<Array>(value_).size();
@@ -296,14 +303,14 @@ namespace json {
             }
         }
 
-        std::string toStyledString() const;
+        std::string ToStyledString() const;
 
-        std::string toString() const;
+        std::string ToString() const;
 
 
     private:
         Type type_;
-        std::variant<std::monostate, bool, int, double, std::string, Array, Object> value_;
+        std::variant<std::monostate, bool, int64_t, double, std::string, Array, Object> value_;
 
 
         void checkType(Type expected) const {
