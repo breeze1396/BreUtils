@@ -1,6 +1,4 @@
 #pragma once
-#ifndef JSON_GENERATOR_HPP
-#define JSON_GENERATOR_HPP
 
 #include "json_value.hpp"
 #include "json_exception.hpp"
@@ -103,4 +101,3 @@ namespace json {
 } // namespace json
 } // namespace bre
 
-#endif // JSON_GENERATOR_HPP

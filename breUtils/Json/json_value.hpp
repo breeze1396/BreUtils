@@ -1,9 +1,6 @@
-#ifndef JSON_VALUE_HPP
-#define JSON_VALUE_HPP
+#pragma once
 
 #include "json_exception.hpp"
-//#include "json_generator.hpp"
-
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -15,13 +12,39 @@
 namespace bre {
 
 namespace json {
+    class ConstValueIterator;
+    class ValueIterator; 
+
 	class Generator;
+
     enum class Type { Null, Bool, Int, Double, String, Array, Object };
 
     class Value {
     public:
         using Object = std::unordered_map<std::string, Value>;
         using Array = std::vector<Value>;
+
+        static std::string TypeStr(Type type) {
+            switch (type) {
+            case Type::Null:
+            return "Null";
+            case Type::Bool:
+            return "Bool";
+            case Type::Int:
+            return "Int";
+            case Type::Double:
+            return "Double";
+            case Type::String:
+            return "String";
+            case Type::Array:
+            return "Array";
+            case Type::Object:
+            return "Object";
+            default:
+            return "Unknown";
+            }
+        }
+    
 
         Value() : type_(Type::Null), value_(std::monostate{}) {}
         Value(const Value& other) : type_(other.type_), value_(other.value_) {}
@@ -303,11 +326,21 @@ namespace json {
             }
         }
 
+        std::string GetTypeStr() const {
+            return TypeStr(type_);
+        }
+        
         std::string ToStyledString() const;
 
         std::string ToString() const;
 
-
+        ValueIterator begin();
+    
+        ValueIterator end();
+    
+        ConstValueIterator begin() const;
+    
+        ConstValueIterator end() const;
     private:
         Type type_;
         std::variant<std::monostate, bool, int64_t, double, std::string, Array, Object> value_;
@@ -321,8 +354,169 @@ namespace json {
     };
 
 
+class ValueIterator {
+    public:
+        using ArrayIterator = Value::Array::iterator;
+        using ObjectIterator = Value::Object::iterator;
+    
+        ValueIterator() = default;
+    
+        explicit ValueIterator(ArrayIterator arrayIt) : arrayIt_(arrayIt), isArray_(true) {}
+        explicit ValueIterator(ObjectIterator objectIt) : objectIt_(objectIt), isArray_(false) {}
+    
+        Value& operator*() {
+            if (isArray_) {
+                return *arrayIt_;
+            } else {
+                return objectIt_->second;
+            }
+        }
+    
+        Value* operator->() {
+            if (isArray_) {
+                return &(*arrayIt_);
+            } else {
+                return &(objectIt_->second);
+            }
+        }
+    
+        ValueIterator& operator++() {
+            if (isArray_) {
+                ++arrayIt_;
+            } else {
+                ++objectIt_;
+            }
+            return *this;
+        }
+    
+        ValueIterator operator++(int) {
+            ValueIterator temp = *this;
+            ++(*this);
+            return temp;
+        }
+
+    
+        bool operator==(const ValueIterator& other) const {
+            return isArray_ == other.isArray_ &&
+                   (isArray_ ? arrayIt_ == other.arrayIt_ : objectIt_ == other.objectIt_);
+        }
+    
+        bool operator!=(const ValueIterator& other) const {
+            return !(*this == other);
+        }
+    
+    private:
+        ArrayIterator arrayIt_;
+        ObjectIterator objectIt_;
+        bool isArray_ = true;
+};
+    
+class ConstValueIterator {
+public:
+    using ArrayConstIterator = Value::Array::const_iterator;
+    using ObjectConstIterator = Value::Object::const_iterator;
+
+    ConstValueIterator() = default;
+
+    explicit ConstValueIterator(ArrayConstIterator arrayIt) : arrayIt_(arrayIt), isArray_(true) {}
+    explicit ConstValueIterator(ObjectConstIterator objectIt) : objectIt_(objectIt), isArray_(false) {}
+
+    const Value& operator*() const {
+        if (isArray_) {
+            return *arrayIt_;
+        } else {
+            return objectIt_->second;
+        }
+    }
+
+    const Value* operator->() const {
+        if (isArray_) {
+            return &(*arrayIt_);
+        } else {
+            return &(objectIt_->second);
+        }
+    }
+
+    ConstValueIterator& operator++() {
+        if (isArray_) {
+            ++arrayIt_;
+        } else {
+            ++objectIt_;
+        }
+        return *this;
+    }
+
+    ConstValueIterator operator++(int) {
+        ConstValueIterator temp = *this;
+        ++(*this);
+        return temp;
+    }
+
+    bool operator==(const ConstValueIterator& other) const {
+        return isArray_ == other.isArray_ &&
+                (isArray_ ? arrayIt_ == other.arrayIt_ : objectIt_ == other.objectIt_);
+    }
+
+    bool operator!=(const ConstValueIterator& other) const {
+        return !(*this == other);
+    }
+
+private:
+    ArrayConstIterator arrayIt_;
+    ObjectConstIterator objectIt_;
+    bool isArray_ = true;
+};
+
+// 在 Value 类中实现 begin() 和 end() 方法
+ValueIterator Value::begin() {
+    if (type_ == Type::Array) {
+        return ValueIterator(std::get<Array>(value_).begin());
+    } else if (type_ == Type::Object) {
+        return ValueIterator(std::get<Object>(value_).begin());
+    } else {
+        std::string cur_type = GetTypeStr();
+        std::string err_msg = "Value: " + cur_type + " is not iterable";
+        throw JsonParseException::TypeError(err_msg);
+    }
+}
+
+ValueIterator Value::end() {
+    if (type_ == Type::Array) {
+        return ValueIterator(std::get<Array>(value_).end());
+    } else if (type_ == Type::Object) {
+        return ValueIterator(std::get<Object>(value_).end());
+    } else {
+        std::string cur_type = GetTypeStr();
+        std::string err_msg = "Value: " + cur_type + "is not iterable";
+        throw JsonParseException::TypeError(err_msg);
+    }
+}
+
+ConstValueIterator Value::begin() const {
+    if (type_ == Type::Array) {
+        return ConstValueIterator(std::get<Array>(value_).begin());
+    } else if (type_ == Type::Object) {
+        return ConstValueIterator(std::get<Object>(value_).begin());
+    } else {
+        std::string cur_type = GetTypeStr();
+        std::string err_msg = "Value: " + cur_type + "is not iterable";
+        throw JsonParseException::TypeError(err_msg);
+    }
+}
+
+ConstValueIterator Value::end() const {
+    if (type_ == Type::Array) {
+        return ConstValueIterator(std::get<Array>(value_).end());
+    } else if (type_ == Type::Object) {
+        return ConstValueIterator(std::get<Object>(value_).end());
+    } else {
+        std::string cur_type = GetTypeStr();
+        std::string err_msg = "Value: " + cur_type + "is not iterable";
+        throw JsonParseException::TypeError(err_msg);
+    }
+}
 
 
 } // namespace json
 } // namespace bre
-#endif // JSON_VALUE_HPP
+

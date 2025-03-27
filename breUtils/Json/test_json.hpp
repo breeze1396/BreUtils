@@ -414,6 +414,20 @@ static void test_parse_jsonchecker(){
     }
 }
 
+void test_Iterator(){
+    std::string jsonString = R"(
+    "name": "John"
+
+)";
+    Value root = Parser::parse(jsonString);
+    
+
+    for (auto it : root) {
+        std::cout << it << std::endl;
+    }
+
+}
+
 
 int testJson() {
     // 测试解析
@@ -427,7 +441,8 @@ int testJson() {
     // test_generate_int();
     // test_generate_bool_null();
     // test_generate_str();
-    test_generete_complex();
+    // test_generete_complex();
+    test_Iterator();
 
 	return 0;
 }

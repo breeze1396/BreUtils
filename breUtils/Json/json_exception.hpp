@@ -1,7 +1,4 @@
 #pragma once
-#ifndef JSON_EXCEPTION_HPP
-#define JSON_EXCEPTION_HPP
-
 // JsonParseException 类，用于JSON 解析 和 生成 中的错误处理
 
 #include <exception>
@@ -32,7 +29,6 @@ namespace bre {
                     #else
                     message_ = locationMsg(location) + "\n" + message;
                     #endif
-                    
                 }
 
             const char* what() const noexcept override {
@@ -47,22 +43,22 @@ namespace bre {
             // 静态方法：返回特定的异常对象
             static JsonParseException SyntaxError(const std::string& details,
                 const std::source_location& location = std::source_location::current()) {
-                return JsonParseException("Syntax Error: " + details + " at " + locationMsg(location), JsonErrorType::SyntaxError);
+                return JsonParseException("Syntax Error: " + details, JsonErrorType::SyntaxError, location);
             }
 
             static JsonParseException TypeError(const std::string& details,
                 const std::source_location& location = std::source_location::current()) {
-                return JsonParseException("Type Error: " + details + " at " + locationMsg(location), JsonErrorType::TypeError);
+                return JsonParseException("Type Error: " + details, JsonErrorType::TypeError, location);
             }
 
             static JsonParseException ValueError(const std::string& details,
                 const std::source_location& location = std::source_location::current()) {
-                return JsonParseException("Value Error: " + details + " at " + locationMsg(location), JsonErrorType::ValueError);
+                return JsonParseException("Value Error: " + details, JsonErrorType::ValueError, location);
             }
 
             static JsonParseException KeyError(const std::string& details,
                 const std::source_location& location = std::source_location::current()) {
-                return JsonParseException("Key Error: " + details + " at " + locationMsg(location), JsonErrorType::KeyError);
+                return JsonParseException("Key Error: " + details, JsonErrorType::KeyError, location);
             }
 
         private:
@@ -75,4 +71,3 @@ namespace bre {
         };
 	} // namespace json
 } // namespace bre
-#endif // JSON_EXCEPTION_HPP

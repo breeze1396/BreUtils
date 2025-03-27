@@ -1,12 +1,9 @@
 #pragma once
-#ifndef JSON_PARSE_HPP
-#define JSON_PARSE_HPP
 
 #include "json_value.hpp"
 #include "json_exception.hpp"
 #include <string>
 #include <cctype>
-// #include <stdexcept>
 #include <iostream>
 #include <charconv>
 
@@ -410,4 +407,3 @@ namespace json {
     };
 } // namespace json
 } // namespace bre
-#endif // JSON_PARSE_HPP
