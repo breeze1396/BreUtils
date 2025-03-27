@@ -34,10 +34,10 @@ using namespace std::chrono_literals;
 
 class TCPSender {
 public:
-    TCPSender(std::string host, int port): 
-        _socket(m_io_context), 
-        m_host(host), m_port(port), 
-        timer(m_io_context)
+    TCPSender(std::string host, int port)
+        : _socket(m_io_context)
+        , m_host(host)
+        , m_port(port)
     {   
         try{
             connect();
@@ -49,7 +49,6 @@ public:
             std::cerr << "TCPSender Exception: " << e.what() << std::endl;
             std::cout << "maybe the server or receiver is not started" << std::endl;
         }
-        startPing();
         _is_closed = false;
     }
 
@@ -168,22 +167,6 @@ private:
             // std::println("time stamp: {}\n\n", end.time_since_epoch().count());
         }
     }    
-
-    void startPing(){
-        timer.expires_after(30s);
-        timer.async_wait([&](const std::error_code&) {
-            if(_queue.empty()) {
-                std::string ping = "ping";
-                Send(ping);
-            }
-            if(_is_closed) {
-                return;
-            }
-
-            startPing();
-        });
-    }
-
 private:
     bool _is_closed = true;
 
@@ -200,7 +183,6 @@ private:
     std::condition_variable _cv;
 
     std::thread _send_thread;
-    asio::steady_timer timer;
 };
 
 
