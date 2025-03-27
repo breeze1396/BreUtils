@@ -11,14 +11,24 @@ namespace bre {
 namespace json {
     class Parser {
     public:
-        static Value parse(const std::string& str) {
-            std::string cleanStr = removeComments(removeTailComma(str));
+        static Value parse(const std::string& str, bool is_strict = false) {
+            std::string cleanStr;
+            if(!is_strict){
+                std::string cleanStr = removeComments(removeTailComma(str));
+            }else{
+                cleanStr = str;
+            }
             Parser parser(cleanStr);
             return parser.parseValue();
         }
 
-        static void parse(const std::string& str, Value& root) {
-            std::string cleanStr = removeComments(removeTailComma(str));
+        static void parse(const std::string& str, Value& root, bool is_strict = false) {
+            std::string cleanStr;
+            if(!is_strict){
+                std::string cleanStr = removeComments(removeTailComma(str));
+            }else{
+                cleanStr = str;
+            }
             Parser parser(cleanStr);
             root = parser.parseValue();
         }

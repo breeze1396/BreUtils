@@ -9,7 +9,6 @@
 namespace bre {
     class HexCov {
     public:
-        // 将十六进制字符串转换为普通字符串
         static std::string hexToStr(const std::string& hex) {
             if (hex.length() % 2 != 0) {
                 return "";
@@ -27,14 +26,12 @@ namespace bre {
             return result;
         }
 
-        // 将十六进制字符串转换为整数
         static int hexToInt(const std::string& hex) {
             int result = 0;
             std::istringstream(hex) >> std::hex >> result;
             return result;
         }
 
-        // 将普通字符串转换为十六进制字符串
         static std::string strToHex(const std::string& str) {
             std::ostringstream oss;
             for (unsigned char c : str) {
@@ -43,7 +40,6 @@ namespace bre {
             return oss.str();
         }
 
-        // 将整数转换为十六进制表示，默认返回字符串，可选返回二进制形式的std::vector<bool>
         static std::string intToHex(int value, bool asBinaryVector = false, std::vector<bool>* binVec = nullptr) {
             std::ostringstream oss;
             oss << std::hex << value;
