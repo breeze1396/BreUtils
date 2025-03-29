@@ -18,8 +18,6 @@
 
 #ifdef ASIO_STANDALONE
 #include <asio.hpp>
-#include <system_error>
-using std::system_error;
 using namespace asio;
 using error_code = asio::error_code;
 #else
@@ -34,13 +32,19 @@ using namespace std::chrono_literals;
 
 class TCPSender {
 public:
+    using Shared = std::shared_ptr<TCPSender>;
+    static Shared Create(std::string host, int port) {
+        return Shared(new TCPSender(host, port));
+    }
+
+
     TCPSender(std::string host, int port)
         : _socket(m_io_context)
         , m_host(host)
         , m_port(port)
     {   
         try{
-            connect();
+            Connect();
 
             _send_thread = std::thread([this]{
                 sendThread();
@@ -52,7 +56,7 @@ public:
         _is_closed = false;
     }
 
-    void connect(){
+    void Connect(){
         int retry = 3;
         bool connected = false;
         while (retry > 0) {
@@ -106,18 +110,12 @@ public:
         _cv.notify_one();
     }
 
+    // 直接发送数据
     void SendDirect(void* data, size_t size) {
         // 写头
         asio::write(_socket, asio::buffer(_header.GetHeaderData(size)));
         // 写文件
-        auto now = std::chrono::system_clock::now();
         asio::write(_socket, asio::buffer((uint8_t*)data, size));
-
-        // static int count = 0;
-        // auto end = std::chrono::system_clock::now();
-        // std::chrono::microseconds interal = end-now;
-        // std::println("SendDirect: {}:\ninteral: {}us", count++, interal);
-        // std::println("time stamp: {}\n\n", end.time_since_epoch().count());
     }
 
     void Close() {
@@ -144,27 +142,24 @@ public:
 private:
     void sendThread() {
         while (true) {
-            std::unique_lock<std::mutex> lock(_mutex);
-            _cv.wait(lock, [this]{
-                return !_queue.empty() || _is_closed;
-            });
+            std::vector<uint8_t> data;
+            { 
+                std::unique_lock<std::mutex> lock(_mutex);
+                _cv.wait(lock, [this]{
+                    return !_queue.empty() || _is_closed;
+                });
 
-            if (_is_closed && _queue.empty()) {
-                break;
+                if (_is_closed && _queue.empty()) {
+                    break;
+                }
+
+                data = _queue.front();
+                _queue.pop();
             }
-
-            auto data = _queue.front();
-            _queue.pop();
             // 写头
             asio::write(_socket, asio::buffer(_header.GetHeaderData(data.size())));
             // 写文件
-            static int count = 0;
-            auto now = std::chrono::system_clock::now();
             asio::write(_socket, asio::buffer(data));
-            // auto end = std::chrono::system_clock::now();
-            // auto interal = std::chrono::duration_cast<std::chrono::microseconds>(end-now);
-            // std::println("sendVideoData: {}:\ninteral: {}us", count++, interal.count());
-            // std::println("time stamp: {}\n\n", end.time_since_epoch().count());
         }
     }    
 private:
@@ -190,7 +185,7 @@ class TCPReceiver {
 public:
     TCPReceiver(int port):m_port(port), _socket(m_io_context) {
         std::cout << "TCPReceiver listen: " << port <<'\n';
-        connect();
+        startConnect();
         _recv_thread = std::thread([this]{
             recvThread();
         });
@@ -235,7 +230,7 @@ public:
     }
 
 private:
-    void connect(){
+    void startConnect(){
         tcp::acceptor acceptor(m_io_context, tcp::endpoint(tcp::v4(), m_port));
         _socket = acceptor.accept();
     }
@@ -276,7 +271,7 @@ private:
                 if(error == asio::error::eof) {
                     std::cout << "Connection closed" << std::endl;
                     std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                    connect();
+                    startConnect();
                     return {};
                 } else throw std::system_error(error);
             }
@@ -301,9 +296,6 @@ private:
                 auto receivedData = read_data_from_socket();
                 if(receivedData.empty()) [[unlikely]] {
                     // std::cout << "Received empty data" << std::endl;
-                    continue;
-                } else if(receivedData.size() == 4 && receivedData[0] == 'p' && receivedData[1] == 'i' && receivedData[2] == 'n' && receivedData[3] == 'g') {
-                    std::cout << "Received ping" << std::endl;
                     continue;
                 }
                 _queue.push(std::move(receivedData));

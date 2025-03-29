@@ -1,28 +1,14 @@
 #pragma once
-#define BOOST_ASIO_ENABLE_HANDLER_TRACKING
-#ifdef ASIO_STANDALONE
-#include <asio.hpp>
-#include <system_error>
-using std::system_error;
-using namespace asio;
-#else
-#include <boost/asio.hpp>
-namespace asio = boost::asio;
-using boost::system::error_code;
-#endif
 
+#include "TCP.hpp"
 #include "TCPManager.hpp"
-#include "TCPServer.hpp"
-#include "AsioIOContextPool.hpp"
-#include "TCPSession.hpp"
-
 #include <thread>
 #include <chrono>
 
 static void sendThread(int id, int port) {
     TCPSender sender("127.0.0.1", port);
     for(int i = 0; i < 10; i++) {
-        int sleep_time = rand() % 100 + 100;
+        int sleep_time = rand() % 50 + 50;
         std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
         std::string msg = "id: " + std::to_string(id) + "sleep time: " + std::to_string(sleep_time);
         sender.Send(msg);
@@ -33,15 +19,26 @@ static void sendThread(int id, int port) {
 
 class MyNetLogic : public NetLogic {
 public:
-    void handleMessage(const netMsgNode& msg) override {
+    void OnClientConnected(const std::string& session_id) override {
+        std::cout << "Server OnClientConnected: " << session_id << std::endl;
+    }
+    void OnClientDisconnected(const std::string& session_id) override {
+        std::cout << "Server OnClientDisconnected: " << session_id << std::endl;
+    }
+
+    void handleMessage(const netMsgNode& in_msg) override {
+        auto msg = in_msg;
         std::cout << "Recv msg: " << std::string(msg.Data->begin(), msg.Data->end()) << std::endl;
+        std::string echo_msg = "echo: " + std::string(msg.Data->begin(), msg.Data->end());
+        msg.Data->clear();
+        echo_msg.insert(echo_msg.end(), msg.Data->begin(), msg.Data->end());
+        msg.Data = std::make_shared<std::vector<uint8_t>>(echo_msg.begin(), echo_msg.end());
         Send(msg);
     }
 
 };
 
 static void test_TcpServer() {
-    std::cout << "TCPServer starts and listens on the specified port" << std::endl;
     unsigned short port = 8764;
 
     NetLogic::Shared net_logic = std::make_shared<MyNetLogic>();
@@ -65,7 +62,34 @@ static void test_TcpServer() {
     server_thread.join();
 }
 
+
+static void testClient(){
+    unsigned short port = 8764;
+
+    NetLogic::Shared net_logic = std::make_shared<MyNetLogic>();
+
+    TCPServer server(port, net_logic);
+
+    std::thread server_thread([&server]() {
+        server.Run();
+    });
+
+    TCPClinet clinet;
+    auto cb = [](const netMsgNode& msg) {
+        std::cout << "clinet Recv msg: " << std::string(msg.Data->begin(), msg.Data->end()) << std::endl;
+    };
+
+    auto session = clinet.GetSession("127.0.0.1", port, cb);
+    session->Send("Hello, world!");
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    server.Stop();
+    server_thread.join();
+    std::cout << "testClient end!!!" << std::endl;
+}   
+
+
 int testTCPServer() {
-    test_TcpServer();
+    // test_TcpServer();
+    testClient();
     return 0;
 }

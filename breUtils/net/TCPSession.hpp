@@ -39,12 +39,15 @@ public:
     }
 
     ~TCPSession() {
+        if(_cb_remove_from_server){ _cb_remove_from_server(_session_id);}
+        
+        _is_closed = true;
         if(_write_thread.joinable()) {
             _write_thread.join();
         }
 
         _socket.close();
-        
+       
         std::cout << "Session destructed: " << _session_id << std::endl;
     }   
 
@@ -64,7 +67,6 @@ public:
     }
 
     void Start() {
-        std::cout << "Session start: " << _session_id << std::endl;
         // 开始监听
         _write_thread = std::thread([this]{
             writeThread();
@@ -73,9 +75,7 @@ public:
     }
 
     void Stop() {
-        auto self = shared_from_this();
         _is_closed = true;
-        if(_cb_remove_from_server){ _cb_remove_from_server(_session_id);}
     }
 
     void Send(std::vector<uint8_t> data) {

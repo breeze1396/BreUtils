@@ -14,7 +14,16 @@ public:
         m_rsa.GenerateKeys();
     }
 
-    ~EchoGate() {}
+    ~EchoGate() {
+        if (m_sender) {
+            delete m_sender;
+        }
+        if (m_receiver) {
+            delete m_receiver;
+        }
+        m_sender = nullptr;
+        m_receiver = nullptr;
+    }
 
     using KeyAndIV = std::pair<std::vector<uint8_t>, std::vector<uint8_t>>;
 
