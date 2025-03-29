@@ -47,7 +47,13 @@ public:
             Connect();
 
             _send_thread = std::thread([this]{
-                sendThread();
+                try {
+                    sendThread();
+                } catch(const std::exception& e) {
+                    std::cout << "Maybe the server or receiver is not started" << std::endl;
+                    std::cerr << "sendThread error: " << e.what() << '\n';
+                }
+            
             });
         } catch (const std::exception& e) {
             std::cerr << "TCPSender Exception: " << e.what() << std::endl;
@@ -183,7 +189,17 @@ private:
 
 class TCPReceiver {
 public:
+<<<<<<< HEAD
+    using Shared = std::shared_ptr<TCPReceiver>;
+    static Shared Create(int port) {
+        return std::make_shared<TCPReceiver>(port);
+    }
+
+    TCPReceiver(int port):m_port(port), _socket(m_io_context)
+    {
+=======
     TCPReceiver(int port):m_port(port), _socket(m_io_context) {
+>>>>>>> 055da1d71142e4fd2f7528a9c96e96c75aea3643
         std::cout << "TCPReceiver listen: " << port <<'\n';
         startConnect();
         _recv_thread = std::thread([this]{
@@ -233,6 +249,19 @@ private:
     void startConnect(){
         tcp::acceptor acceptor(m_io_context, tcp::endpoint(tcp::v4(), m_port));
         _socket = acceptor.accept();
+<<<<<<< HEAD
+        // acceptor.async_accept(_socket, [this](const error_code& ec) {
+        //     if (!ec) {
+        //         std::cout << "Connection accepted" << std::endl;
+        //         _recv_thread = std::thread([this]{
+        //             recvThread();
+        //         });
+        //     } else {
+        //         std::cerr << "Accept error: " << ec.message() << std::endl;
+        //     }
+        // });
+=======
+>>>>>>> 055da1d71142e4fd2f7528a9c96e96c75aea3643
     }
 
     std::vector<uint8_t> read_data_from_socket() {
@@ -321,3 +350,115 @@ private:
     std::thread _recv_thread;   
 };
 
+<<<<<<< HEAD
+
+
+// class TCPReceiver {
+// public:
+//     using Shared = std::shared_ptr<TCPReceiver>;
+//     static Shared Create(int port) {
+//         return std::make_shared<TCPReceiver>(port);
+//     }
+
+//     TCPReceiver(int port):m_port(port), _acceptor(m_io_context, tcp::endpoint(tcp::v4(), m_port))
+//     {
+//         std::cout << "TCPReceiver listen: " << port <<'\n';
+//         startAccept();
+//         _recv_thread = std::thread([this]{
+//             m_io_context.run();
+//         });
+//         std::cout << "TCPReceiver thread started" << std::endl;
+//     }
+
+//     ~TCPReceiver() {
+//         Close();
+//         std::cout << "Reader destructed" << std::endl;
+//     }
+
+//     void Close() {
+//         {
+//             std::unique_lock<std::mutex> lock(_mutex);
+//             _is_closed = true;
+//             _cv.notify_all();
+//         }
+        
+//         if (_recv_thread.joinable()) {
+//             _recv_thread.join();
+//         }
+//     }
+
+//     std::vector<uint8_t> Get() {
+//         std::unique_lock<std::mutex> lock(_mutex);
+//         _cv.wait(lock, [this]{ return !_queue.empty(); });
+
+//         if (_queue.empty()) { return {}; }
+
+//         auto data = std::move(_queue.front());
+//         _queue.pop();
+//         return data;
+//     }
+
+//     std::string GetStr() {
+//         auto data = Get();
+//         return std::string(data.begin(), data.end());
+//     }
+
+// private:
+//     void startAccept() {
+//         auto socket = std::make_shared<tcp::socket>(m_io_context);
+//         _acceptor.async_accept(*socket, [this, socket](const error_code& ec) {
+//             if (!ec) {
+//                 std::cout << "Connection accepted" << std::endl;
+//                 startReceive(socket);
+//             } else {
+//                 std::cerr << "Accept error: " << ec.message() << std::endl;
+//             }
+//             if (!_is_closed) {
+//                 startAccept();
+//             }
+//         });
+//     }
+
+//     void startReceive(std::shared_ptr<tcp::socket> socket) {
+//         auto buffer = std::make_shared<asio::streambuf>();
+//         asio::async_read(*socket, *buffer, asio::transfer_exactly(32), [this, socket, buffer](const error_code& ec, std::size_t) {
+//             if (!ec) {
+//                 auto data = std::vector<uint8_t>(asio::buffers_begin(buffer->data()), asio::buffers_end(buffer->data()));
+//                 _header.Parse(data);
+//                 size_t length = _header.FileSize;
+//                 buffer->consume(32);
+
+//                 auto dataBuffer = std::make_shared<std::vector<uint8_t>>(length);
+//                 asio::async_read(*socket, asio::buffer(*dataBuffer), asio::transfer_exactly(length), [this, socket, dataBuffer](const error_code& ec, std::size_t) {
+//                     if (!ec) {
+//                         std::unique_lock<std::mutex> lock(_mutex);
+//                         _queue.push(std::move(*dataBuffer));
+//                         _cv.notify_one();
+//                     } else {
+//                         std::cerr << "Receive error: " << ec.message() << std::endl;
+//                     }
+//                 });
+//             } else {
+//                 std::cerr << "Header receive error: " << ec.message() << std::endl;
+//             }
+//         });
+//     }
+
+// private:
+//     int m_port = 0;
+    
+//     bool _is_closed = false; 
+//     TCPHeader _header;
+    
+//     asio::io_context m_io_context;
+//     tcp::acceptor _acceptor;
+
+
+//     std::queue<std::vector<uint8_t>> _queue;
+//     std::mutex _mutex;
+//     std::condition_variable _cv;
+
+//     std::thread _recv_thread;   
+// };
+=======
+>>>>>>> 055da1d71142e4fd2f7528a9c96e96c75aea3643
