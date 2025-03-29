@@ -36,18 +36,18 @@ protected:
             if (str1[i] >= '0' && str1[i] <= '9') {
                 str2[j++] = str1[i];
             } else {
-                if (i != 0 && str2[j - 1] != ' ')  { // Óöµ½Êı×ÖºóÃæµÄµÚÒ»¸öÔËËã·ûÇ°¼Ó¿Õ¸ñ
+                if (i != 0 && str2[j - 1] != ' ')  { // é‡åˆ°æ•°å­—åé¢çš„ç¬¬ä¸€ä¸ªè¿ç®—ç¬¦å‰åŠ ç©ºæ ¼
                     str2[j++] = ' ';
-                } if (str1[i] == ')') {     // Óöµ½ÓÒÀ¨ºÅ£¬½«Õ»ÖĞµÄÔËËã·ûµ¯³öÖ±µ½Óöµ½×óÀ¨ºÅ
+                } if (str1[i] == ')') {     // é‡åˆ°å³æ‹¬å·ï¼Œå°†æ ˆä¸­çš„è¿ç®—ç¬¦å¼¹å‡ºç›´åˆ°é‡åˆ°å·¦æ‹¬å·
                     while (!stack.empty() && stack.top() != '(')  {
                         str2[j++] = stack.top();
                         str2[j++] = ' ';
                         stack.pop();
                     } if (!stack.empty() && stack.top() == '(') {
-                        stack.pop();        // µ¯³ö '('
+                        stack.pop();        // å¼¹å‡º '('
                     }
                 } else {
-                    while (!stack.empty() && !symcmp(stack.top(), str1[i])) { // µ±Ç°ÔËËã·ûÓÅÏÈ¼¶Ğ¡ÓÚÕ»¶¥ÔËËã·û
+                    while (!stack.empty() && !symcmp(stack.top(), str1[i])) { // å½“å‰è¿ç®—ç¬¦ä¼˜å…ˆçº§å°äºæ ˆé¡¶è¿ç®—ç¬¦
                         str2[j++] = stack.top();
                         str2[j++] = ' ';
                         stack.pop();
@@ -61,7 +61,7 @@ protected:
             str2[j++] = ' ';
         }
 
-        while (!stack.empty()) { // ½«Õ»ÖĞÊ£ÓàµÄÔËËã·ûµ¯³ö
+        while (!stack.empty()) { // å°†æ ˆä¸­å‰©ä½™çš„è¿ç®—ç¬¦å¼¹å‡º
             str2[j++] = stack.top();
             str2[j++] = ' ';
             stack.pop();
@@ -74,13 +74,13 @@ protected:
 
         for (int i = 0; i < str.size(); i++)
         {
-            if (str[i] >= '0' && str[i] <= '9') // ¼ÆËãÊı×Ö
+            if (str[i] >= '0' && str[i] <= '9') // è®¡ç®—æ•°å­—
                 tmp = tmp * 10 + str[i] - '0';
-            else if (str[i] == ' ')     // Óöµ½¿Õ¸ñ£¬½«Êı×ÖÑ¹ÈëÕ»ÖĞ
+            else if (str[i] == ' ')     // é‡åˆ°ç©ºæ ¼ï¼Œå°†æ•°å­—å‹å…¥æ ˆä¸­
             {
                 stack.push(tmp);
-                tmp = 0; // Çå¿Õ tmp
-            } else { // Óöµ½ÔËËã·û£¬µ¯³öÕ»¶¥Á½¸öÔªËØ½øĞĞÔËËã
+                tmp = 0; // æ¸…ç©º tmp
+            } else { // é‡åˆ°è¿ç®—ç¬¦ï¼Œå¼¹å‡ºæ ˆé¡¶ä¸¤ä¸ªå…ƒç´ è¿›è¡Œè¿ç®—
                 if (stack.size() < 2) {
                     throw std::runtime_error("Insufficient operands for operator");
                 }

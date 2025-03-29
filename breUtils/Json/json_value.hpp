@@ -1,20 +1,22 @@
-#ifndef JSON_VALUE_HPP
-#define JSON_VALUE_HPP
+#pragma once
 
 #include "json_exception.hpp"
-//#include "json_generator.hpp"
-
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include <variant>
 #include <optional>
 #include <stdexcept>
+#include <limits>
 
 namespace bre {
 
 namespace json {
+    class ConstValueIterator;
+    class ValueIterator; 
+
 	class Generator;
+
     enum class Type { Null, Bool, Int, Double, String, Array, Object };
 
     class Value {
@@ -22,15 +24,38 @@ namespace json {
         using Object = std::unordered_map<std::string, Value>;
         using Array = std::vector<Value>;
 
+        static std::string TypeStr(Type type) {
+            switch (type) {
+            case Type::Null:
+            return "Null";
+            case Type::Bool:
+            return "Bool";
+            case Type::Int:
+            return "Int";
+            case Type::Double:
+            return "Double";
+            case Type::String:
+            return "String";
+            case Type::Array:
+            return "Array";
+            case Type::Object:
+            return "Object";
+            default:
+            return "Unknown";
+            }
+        }
+    
+
         Value() : type_(Type::Null), value_(std::monostate{}) {}
         Value(const Value& other) : type_(other.type_), value_(other.value_) {}
         Value(Value&& other) noexcept : type_(other.type_), value_(std::move(other.value_)) {}
 
         ~Value() = default;
 
-        Value(bool b) : type_(Type::Bool), value_(b) {}
+        explicit Value(bool b) : type_(Type::Bool), value_(b) {}
         Value(int i) : type_(Type::Int), value_(i) {}
-        Value(double d) : type_(Type::Double), value_(d) {}
+        explicit Value(double d) : type_(Type::Double), value_(d) {}
+        Value(const char* s) : type_(Type::String), value_(std::string(s)) {}
         Value(const std::string& s) : type_(Type::String), value_(s) {}
         Value(const Array& arr) : type_(Type::Array), value_(arr) {}
         Value(const Object& obj) : type_(Type::Object), value_(obj) {}
@@ -41,6 +66,7 @@ namespace json {
             }
             type_ = other.type_;
             value_ = other.value_;
+            return *this;
         }
 
         Value& operator=(Value&& other) noexcept {
@@ -51,157 +77,160 @@ namespace json {
             return *this;
         }
 
+        // ÈáçËΩΩÊØîËæÉËøêÁÆóÁ¨¶
+        bool operator==(const Value& other) const;
+
         Type type() const {
             return type_;
         }
 
-        void clear() {
+        void Clear() {
             type_ = Type::Null;
             value_ = std::monostate{};
         }
 
-        void setNull() {
-            clear();
+        void SetNull() {
+            Clear();
         }
 
-        void setBool(bool b) {
+        void SetBool(bool b) {
             type_ = Type::Bool;
             value_ = b;
         }
 
-        void setInt(int i) {
+        void SetInt(int i) {
             type_ = Type::Int;
             value_ = i;
         }
 
-        void setDouble(double d) {
+        void SetDouble(double d) {
             type_ = Type::Double;
             value_ = d;
         }
 
-        void setString(const std::string& s) {
+        void SetString(const std::string& s) {
             type_ = Type::String;
             value_ = s;
         }
 
-        void setArray() {
+        void SetArray() {
             type_ = Type::Array;
             value_ = Array{};
         }
 
-        void setObject() {
+        void SetObject() {
             type_ = Type::Object;
             value_ = Object{};
         }
 
-        // ¿‡–Õ◊™ªª∫Ø ˝
-        bool asBool() const {
+        // Á±ªÂûãËΩ¨Êç¢ÂáΩÊï∞
+        bool AsBool() const {
             checkType(Type::Bool);
             return std::get<bool>(value_);
         }
 
-        int asInt() const {
+        int AsInt() const {
             checkType(Type::Int);
-            return std::get<int>(value_);
+            return std::get<int64_t>(value_);
         }
 
-        double asDouble() const {
+        double AsDouble() const {
             checkType(Type::Double);
             return std::get<double>(value_);
         }
 
-        std::string asString() {
+        std::string AsString() {
             checkType(Type::String);
             return std::get<std::string>(value_);
         }
 
-        const std::string asString()const {
+        const std::string AsString()const {
             checkType(Type::String);
             return std::get<std::string>(value_);
         }
 
-        Array asArray() {
+        Array AsArray() {
             checkType(Type::Array);
             return std::get<Array>(value_);
         }
-        const Array asArray()const {
+        const Array AsArray()const {
             checkType(Type::Array);
             return std::get<Array>(value_);
         }
 
-        Object asObject() {
+        Object AsObject() {
             checkType(Type::Object);
             return std::get<Object>(value_);
         }
 
 
-        const Object asObject()const {
+        const Object AsObject()const {
             checkType(Type::Object);
             return std::get<Object>(value_);
         }
 
-        bool isNull() const {
+        bool IsNull() const {
             return type_ == Type::Null;
         }
 
-        bool isBool() const {
+        bool IsBool() const {
             return type_ == Type::Bool;
         }
 
-        bool isInt() const {
+        bool IsInt() const {
             return type_ == Type::Int;
         }
 
-        bool isUInt() const {
-            return isInt() && asInt() >= 0;
+        bool IsUInt() const {
+            return IsInt() && AsInt() >= 0;
         }
 
-        bool isIntegral() const {
-            return isInt() || isUInt();
+        bool IsIntegral() const {
+            return IsInt() || IsUInt();
         }
 
-        bool isDouble() const {
+        bool IsDouble() const {
             return type_ == Type::Double;
         }
 
-        bool isNumeric() const {
-            return isIntegral() || isDouble();
+        bool IsNumeric() const {
+            return IsIntegral() || IsDouble();
         }
 
-        bool isString() const {
+        bool IsString() const {
             return type_ == Type::String;
         }
 
-        bool isArray() const {
+        bool IsArray() const {
             return type_ == Type::Array;
         }
 
-        bool isObject() const {
+        bool IsObject() const {
             return type_ == Type::Object;
         }
 
-        bool isConvertibleTo(Type other) const {
+        bool IsConvertibleTo(Type other) const {
             switch (other) {
             case Type::Null:
-                return isNull();
+                return IsNull();
             case Type::Bool:
-                return isBool();
+                return IsBool();
             case Type::Int:
-                return isInt();
+                return IsInt();
             case Type::Double:
-                return isNumeric();
+                return IsNumeric();
             case Type::String:
-                return isString();
+                return IsString();
             case Type::Array:
-                return isArray();
+                return IsArray();
             case Type::Object:
-                return isObject();
+                return IsObject();
             default:
                 return false;
             }
         }
 
-        bool empty() const {
+        bool Empty() const {
             switch (type_) {
             case Type::Null:
                 return true;
@@ -223,12 +252,12 @@ namespace json {
         }
 
 
-        void resize(int newSize) {
+        void Resize(int newSize) {
             checkType(Type::Array);
             std::get<Array>(value_).resize(newSize);
         }
 
-        //  ˝◊È∫Õ∂‘œÛ∑√Œ 
+        // Êï∞ÁªÑÂíåÂØπË±°ËÆøÈóÆ
         Value& operator[](size_t index) {
             checkType(Type::Array);
             Array& arr = std::get<Array>(value_);
@@ -260,17 +289,18 @@ namespace json {
             const Object& obj = std::get<Object>(value_);
             auto it = obj.find(key);
             if (it == obj.end()) {
-                return Value(); // ∑µªÿ“ª∏ˆø’÷µ
+                static const Value emptyValue;
+                return emptyValue; // ËøîÂõû‰∏Ä‰∏™Á©∫ÂÄº
             }
             return it->second;
         }
 
-        void append(const Value& val) {
+        void Append(const Value& val) {
             checkType(Type::Array);
             std::get<Array>(value_).push_back(val);
         }
 
-        void remove(size_t index) {
+        void Remove(size_t index) {
             checkType(Type::Array);
             Array& arr = std::get<Array>(value_);
             if (index >= arr.size()) {
@@ -279,13 +309,13 @@ namespace json {
             arr.erase(arr.begin() + index);
         }
 
-        void remove(const std::string& key) {
+        void Remove(const std::string& key) {
             checkType(Type::Object);
             Object& obj = std::get<Object>(value_);
             obj.erase(key);
         }
 
-        size_t size() const {
+        size_t Size() const {
             switch (type_) {
             case Type::Array:
                 return std::get<Array>(value_).size();
@@ -296,14 +326,24 @@ namespace json {
             }
         }
 
-        std::string toStyledString() const;
+        std::string GetTypeStr() const {
+            return TypeStr(type_);
+        }
+        
+        std::string ToStyledString() const;
 
-        std::string toString() const;
+        std::string ToString() const;
 
-
+        ValueIterator begin();
+    
+        ValueIterator end();
+    
+        ConstValueIterator begin() const;
+    
+        ConstValueIterator end() const;
     private:
         Type type_;
-        std::variant<std::monostate, bool, int, double, std::string, Array, Object> value_;
+        std::variant<std::monostate, bool, int64_t, double, std::string, Array, Object> value_;
 
 
         void checkType(Type expected) const {
@@ -314,8 +354,169 @@ namespace json {
     };
 
 
+class ValueIterator {
+    public:
+        using ArrayIterator = Value::Array::iterator;
+        using ObjectIterator = Value::Object::iterator;
+    
+        ValueIterator() = default;
+    
+        explicit ValueIterator(ArrayIterator arrayIt) : arrayIt_(arrayIt), isArray_(true) {}
+        explicit ValueIterator(ObjectIterator objectIt) : objectIt_(objectIt), isArray_(false) {}
+    
+        Value& operator*() {
+            if (isArray_) {
+                return *arrayIt_;
+            } else {
+                return objectIt_->second;
+            }
+        }
+    
+        Value* operator->() {
+            if (isArray_) {
+                return &(*arrayIt_);
+            } else {
+                return &(objectIt_->second);
+            }
+        }
+    
+        ValueIterator& operator++() {
+            if (isArray_) {
+                ++arrayIt_;
+            } else {
+                ++objectIt_;
+            }
+            return *this;
+        }
+    
+        ValueIterator operator++(int) {
+            ValueIterator temp = *this;
+            ++(*this);
+            return temp;
+        }
+
+    
+        bool operator==(const ValueIterator& other) const {
+            return isArray_ == other.isArray_ &&
+                   (isArray_ ? arrayIt_ == other.arrayIt_ : objectIt_ == other.objectIt_);
+        }
+    
+        bool operator!=(const ValueIterator& other) const {
+            return !(*this == other);
+        }
+    
+    private:
+        ArrayIterator arrayIt_;
+        ObjectIterator objectIt_;
+        bool isArray_ = true;
+};
+    
+class ConstValueIterator {
+public:
+    using ArrayConstIterator = Value::Array::const_iterator;
+    using ObjectConstIterator = Value::Object::const_iterator;
+
+    ConstValueIterator() = default;
+
+    explicit ConstValueIterator(ArrayConstIterator arrayIt) : arrayIt_(arrayIt), isArray_(true) {}
+    explicit ConstValueIterator(ObjectConstIterator objectIt) : objectIt_(objectIt), isArray_(false) {}
+
+    const Value& operator*() const {
+        if (isArray_) {
+            return *arrayIt_;
+        } else {
+            return objectIt_->second;
+        }
+    }
+
+    const Value* operator->() const {
+        if (isArray_) {
+            return &(*arrayIt_);
+        } else {
+            return &(objectIt_->second);
+        }
+    }
+
+    ConstValueIterator& operator++() {
+        if (isArray_) {
+            ++arrayIt_;
+        } else {
+            ++objectIt_;
+        }
+        return *this;
+    }
+
+    ConstValueIterator operator++(int) {
+        ConstValueIterator temp = *this;
+        ++(*this);
+        return temp;
+    }
+
+    bool operator==(const ConstValueIterator& other) const {
+        return isArray_ == other.isArray_ &&
+                (isArray_ ? arrayIt_ == other.arrayIt_ : objectIt_ == other.objectIt_);
+    }
+
+    bool operator!=(const ConstValueIterator& other) const {
+        return !(*this == other);
+    }
+
+private:
+    ArrayConstIterator arrayIt_;
+    ObjectConstIterator objectIt_;
+    bool isArray_ = true;
+};
+
+// Âú® Value Á±ª‰∏≠ÂÆûÁé∞ begin() Âíå end() ÊñπÊ≥ï
+ValueIterator Value::begin() {
+    if (type_ == Type::Array) {
+        return ValueIterator(std::get<Array>(value_).begin());
+    } else if (type_ == Type::Object) {
+        return ValueIterator(std::get<Object>(value_).begin());
+    } else {
+        std::string cur_type = GetTypeStr();
+        std::string err_msg = "Value: " + cur_type + " is not iterable";
+        throw JsonParseException::TypeError(err_msg);
+    }
+}
+
+ValueIterator Value::end() {
+    if (type_ == Type::Array) {
+        return ValueIterator(std::get<Array>(value_).end());
+    } else if (type_ == Type::Object) {
+        return ValueIterator(std::get<Object>(value_).end());
+    } else {
+        std::string cur_type = GetTypeStr();
+        std::string err_msg = "Value: " + cur_type + "is not iterable";
+        throw JsonParseException::TypeError(err_msg);
+    }
+}
+
+ConstValueIterator Value::begin() const {
+    if (type_ == Type::Array) {
+        return ConstValueIterator(std::get<Array>(value_).begin());
+    } else if (type_ == Type::Object) {
+        return ConstValueIterator(std::get<Object>(value_).begin());
+    } else {
+        std::string cur_type = GetTypeStr();
+        std::string err_msg = "Value: " + cur_type + "is not iterable";
+        throw JsonParseException::TypeError(err_msg);
+    }
+}
+
+ConstValueIterator Value::end() const {
+    if (type_ == Type::Array) {
+        return ConstValueIterator(std::get<Array>(value_).end());
+    } else if (type_ == Type::Object) {
+        return ConstValueIterator(std::get<Object>(value_).end());
+    } else {
+        std::string cur_type = GetTypeStr();
+        std::string err_msg = "Value: " + cur_type + "is not iterable";
+        throw JsonParseException::TypeError(err_msg);
+    }
+}
 
 
 } // namespace json
 } // namespace bre
-#endif // JSON_VALUE_HPP
+

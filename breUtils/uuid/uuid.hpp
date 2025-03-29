@@ -1,3 +1,5 @@
+#pragma once
+
 #include <chrono>
 #include <mutex>
 #include <thread>
@@ -9,20 +11,20 @@
 namespace bre {
 
     struct IdGenOptions {
-        uint64_t BaseTime{ 631123200000 }; // »ù´¡Ê±¼ä£¨msµ¥Î»£©
-        uint8_t SeqBitLength{ 8 };         // ĞòÁĞºÅÎ»³¤
-        uint8_t MaxSeqNumber{ 20 };        // ×î´óĞòÁĞºÅ
-        uint8_t MinSeqNumber{ 5 };        // ×îĞ¡ĞòÁĞºÅ
+        uint64_t BaseTime{ 631123200000 }; // åŸºç¡€æ—¶é—´ï¼ˆmså•ä½ï¼‰
+        uint8_t SeqBitLength{ 8 };         // åºåˆ—å·ä½é•¿
+        uint8_t MaxSeqNumber{ 20 };        // æœ€å¤§åºåˆ—å·
+        uint8_t MinSeqNumber{ 5 };        // æœ€å°åºåˆ—å·
     };
 
-    // ID Éú³ÉÆ÷ºËĞÄÂß¼­
+    // ID ç”Ÿæˆå™¨æ ¸å¿ƒé€»è¾‘
     class SnowWorker {
     public:
         explicit SnowWorker(const IdGenOptions& options) {
             setOptions(options);
         }
 
-        // Éú³ÉÏÂÒ»¸ö ID
+        // ç”Ÿæˆä¸‹ä¸€ä¸ª ID
         int64_t Next() {
             std::lock_guard lock(_mutex);
             auto currentTimeTick = getCurrentTimeTick();
@@ -46,14 +48,14 @@ namespace bre {
             return now - static_cast<int64_t>(_baseTime);
         }
 
-        // ¼ÆËã ID
+        // è®¡ç®— ID
         int64_t calculateId() {
             uint64_t id = (static_cast<uint64_t>(_lastTimeTick) << _seqBitLength) | _currentSeqNumber;
             _currentSeqNumber++;
             return static_cast<int64_t>(id);
         }
 
-        // ÉèÖÃÅäÖÃÑ¡Ïî
+        // è®¾ç½®é…ç½®é€‰é¡¹
         void setOptions(const IdGenOptions& options) {
             if (options.BaseTime < 631123200000 || options.BaseTime > getCurrentTimeTick() + _baseTime) {
                 throw std::invalid_argument("BaseTime error.");
@@ -67,7 +69,7 @@ namespace bre {
 
             uint32_t maxSeqNumber = (1 << options.SeqBitLength) - 1;
             if (options.MaxSeqNumber > maxSeqNumber) {
-				std::string msg = std::format("SeqBitLength: {}, µ«ÊÇÄãµÄmaxSeqNumber: {} ³¬¹ıÁË", 
+				std::string msg = std::format("SeqBitLength: {}, ä½†æ˜¯ä½ çš„maxSeqNumber: {} è¶…è¿‡äº†", 
                                             options.SeqBitLength, maxSeqNumber);
                 throw std::invalid_argument(msg);
             }
