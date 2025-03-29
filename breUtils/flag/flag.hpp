@@ -2,21 +2,19 @@
 #ifndef FLAG_HPP
 #define FLAG_HPP
 
-// go flag¿âµÄc++ÊµÏÖ
+// go flagåº“çš„c++å®ç°
 // brez 2025.01.05
-// µØÖ·£ºhttps://github.com/breeze1396/BreUtils
-// Ğ­Òé£ºMIT
 /*
-Ìí¼Ó²ÎÊıÄ£°åÈçÏÂ£º
+æ·»åŠ å‚æ•°æ¨¡æ¿å¦‚ä¸‹ï¼š
 	yourProgramName -flag1=value1 -flag2 value2 -truebool=T -truebool2 -falsebool=F argc1 argc2 argc3 ...
 
-ËùÓĞÖ¸ÕëÀàĞÍ£¬±äÁ¿Çë×ÔĞĞ¹ÜÀíÖÜÆÚ
+æ‰€æœ‰æŒ‡é’ˆç±»å‹ï¼Œå˜é‡è¯·è‡ªè¡Œç®¡ç†å‘¨æœŸ
 */
 
 /*
-todo: ¶ÔÓÚÊı×ÖÍê±¸ĞÔµÄÅĞ¶Ï£¬±ÈÈçintµÄ·¶Î§ÅĞ¶Ï
-todo: ÊÇ·ñĞèÒªÖÇÄÜÖ¸ÕëµÄ·µ»Ø£¿£¿
-todo: Ôö¼ÓÍê±¸ĞÔ²âÊÔ
+todo: å¯¹äºæ•°å­—å®Œå¤‡æ€§çš„åˆ¤æ–­ï¼Œæ¯”å¦‚intçš„èŒƒå›´åˆ¤æ–­
+todo: æ˜¯å¦éœ€è¦æ™ºèƒ½æŒ‡é’ˆçš„è¿”å›ï¼Ÿï¼Ÿ
+todo: å¢åŠ å®Œå¤‡æ€§æµ‹è¯•
 */
 
 #include <memory>
@@ -80,7 +78,7 @@ struct FlagInfo {
         }
     }
     void PrintInfo() const {
-        // ÉèÖÃcoutÊä³ötrue£¬false
+        // è®¾ç½®coutè¾“å‡ºtrueï¼Œfalse
 		std::cout.setf(std::ios::boolalpha);
         std::cout << "name: " << name << "\n";
         switch (type)
@@ -116,7 +114,7 @@ struct FlagInfo {
 		std::cout << "\tisRequired: " << isRequired << "\n";
 		std::cout << "\thelp: " << help << std::endl;  
 
-        // »¹Ô­cout Êä³öÎª1, 0
+        // è¿˜åŸcout è¾“å‡ºä¸º1, 0
         std::cout.unsetf(std::ios::boolalpha);
 	}
 
@@ -130,11 +128,11 @@ struct FlagInfo {
 
 class Flag {
 public:
-    // ¹¹Ôìº¯Êı
+    // æ„é€ å‡½æ•°
     Flag(const std::string& program_name = "", const std::string& description = "");
     ~Flag();
 
-    // Ìí¼Ó²»Í¬ÀàĞÍµÄ±êÖ¾·½·¨
+    // æ·»åŠ ä¸åŒç±»å‹çš„æ ‡å¿—æ–¹æ³•
     void Bool(bool* pvalue, const std::string& name, bool default_value, const std::string& help);
     bool* Bool(const std::string& name, bool default_value, const std::string& help);
 
@@ -153,20 +151,20 @@ public:
     void String(std::string* pvalue, const std::string& name, const std::string& default_value, const std::string& help);
 
 
-	int Narg();     // ·Ç±êÖ¾²ÎÊıÊıÁ¿
-    int Nflag();    // ²ÎÊıÊıÁ¿
-	std::string Arg(size_t i); // »ñÈ¡µÚi¸ö·Ç±êÖ¾²ÎÊı
-    std::vector<std::string> Arg(); // »ñÈ¡·Ç±êÖ¾²ÎÊı
+	int Narg();     // éæ ‡å¿—å‚æ•°æ•°é‡
+    int Nflag();    // å‚æ•°æ•°é‡
+	std::string Arg(size_t i); // è·å–ç¬¬iä¸ªéæ ‡å¿—å‚æ•°
+    std::vector<std::string> Arg(); // è·å–éæ ‡å¿—å‚æ•°
 	std::vector<FlagInfo::Shared> VisiedAll() const { return m_flags; }
 	std::string ProgramName() const { return m_program_name; }
 	std::string Description() const { return m_description; }
 
 
-    // ½âÎöÃüÁîĞĞ²ÎÊı
+    // è§£æå‘½ä»¤è¡Œå‚æ•°
     void Parse(int argc, char** argv);
-    bool Parsed() const; // ÊÇ·ñ½âÎöÍê³É
+    bool Parsed() const; // æ˜¯å¦è§£æå®Œæˆ
 
-    // ´òÓ¡°ïÖúĞÅÏ¢
+    // æ‰“å°å¸®åŠ©ä¿¡æ¯
     void PrintDefault() const;
 
 private:
@@ -176,8 +174,8 @@ private:
 	static bool stringToBool(const std::string& val);
 
 private:
-	std::string m_program_name;     // ³ÌĞòÃû³Æ
-	std::string m_description;      // ³ÌĞòÃèÊö
+	std::string m_program_name;     // ç¨‹åºåç§°
+	std::string m_description;      // ç¨‹åºæè¿°
     std::string m_prefix_chars{ "-" };
     std::string m_assign_chars{ "=" };
     bool m_is_parsed = false;
@@ -185,7 +183,7 @@ private:
     std::vector<FlagInfo::Shared> m_flags;
     std::map<std::string, FlagInfo::Shared> m_flag_map;
 
-    std::vector<std::string> m_positional_args;      // ·Ç±êÖ¾²ÎÊı?
+    std::vector<std::string> m_positional_args;      // éæ ‡å¿—å‚æ•°?
 };
 
 Flag::Flag(const std::string& program_name, const std::string& description)
@@ -198,7 +196,7 @@ void Flag::addFlag(FlagInfo::Shared flag_info) {
     m_flag_map[flag_info->name] = flag_info;
 }
 
-// ½öÅĞ¶Ï´«ÈëµÄÖµÊÇ·ñ·ûºÏµ±Ç°ÀàĞÍµÄÔ¤ÆÚ
+// ä»…åˆ¤æ–­ä¼ å…¥çš„å€¼æ˜¯å¦ç¬¦åˆå½“å‰ç±»å‹çš„é¢„æœŸ
 inline  bool Flag::judgeSuitableValue(FlagType type, const std::string& val)
 {
 	if (val.empty()) {
@@ -259,7 +257,7 @@ inline  bool Flag::judgeSuitableValue(FlagType type, const std::string& val)
 	}
 
 
-	// ¡·¡·¡·¡·¡·¡·   ÎŞ·ûºÅÀàĞÍ    ¡¶¡¶¡¶¡¶¡¶¡¶¡¶¡¶
+	// ã€‹ã€‹ã€‹ã€‹ã€‹ã€‹   æ— ç¬¦å·ç±»å‹    ã€Šã€Šã€Šã€Šã€Šã€Šã€Šã€Š
 	if (val[0] == '-') {
 		return false;
 	}
@@ -287,7 +285,7 @@ inline  bool Flag::judgeSuitableValue(FlagType type, const std::string& val)
 }
 
 
-// ´«Èë×Ö·û±ØĞëÊÇ1, 0, t, f, T, F, true, false, TRUE, FALSE, True, False
+// ä¼ å…¥å­—ç¬¦å¿…é¡»æ˜¯1, 0, t, f, T, F, true, false, TRUE, FALSE, True, False
 inline bool Flag::stringToBool(const std::string& val)
 {
 	if (val == "1" || val == "t" || val == "T" || val == "true" || val == "TRUE" || val == "True") {
@@ -414,13 +412,13 @@ void Flag::Parse(int argc, char** argv) {
     for (int i = 1; i < argc; ++i) {
         std::string arg(argv[i]);
 
-        if (arg.find(m_prefix_chars) != 0) { // Ã»ÓĞÇ°×º£¬ÊÇÎ»ÖÃ²ÎÊı
+        if (arg.find(m_prefix_chars) != 0) { // æ²¡æœ‰å‰ç¼€ï¼Œæ˜¯ä½ç½®å‚æ•°
             m_positional_args.push_back(arg);
 			continue;
         }
 
         size_t prefix_pos = 1;
-		// ÅĞ¶ÏÊÇ·ñÊÇÁ½¸öÇ°×º
+		// åˆ¤æ–­æ˜¯å¦æ˜¯ä¸¤ä¸ªå‰ç¼€
 		if (arg.find(m_prefix_chars+ m_prefix_chars) == 0) {
 			prefix_pos = m_prefix_chars.length()*2;
 		}
@@ -428,7 +426,7 @@ void Flag::Parse(int argc, char** argv) {
         std::string flag_name = arg.substr(prefix_pos, eq_pos - m_prefix_chars.length());
         auto it = m_flag_map.find(flag_name);
 
-		// Èç¹ûÃ»ÓĞÕÒµ½flag
+		// å¦‚æœæ²¡æœ‰æ‰¾åˆ°flag
         if (it == m_flag_map.end()) {
             std::cerr << "Unknown flag: " << arg << std::endl;
             PrintDefault();
@@ -436,16 +434,16 @@ void Flag::Parse(int argc, char** argv) {
         }
 
         auto& flag = it->second;
-		if (eq_pos != std::string::npos) { // ÓĞ¸³Öµ`=`ºÅ
+		if (eq_pos != std::string::npos) { // æœ‰èµ‹å€¼`=`å·
             flag->SetVal(arg.substr(eq_pos + 1));
             continue;
         }
 
         std::string value;
 
-        // ÅĞ¶ÏargcÊıÁ¿s
-        if (i + 1 >= argc) { // ºóÃæÃ»ÓĞ²ÎÊıÁË
-			// Èç¹ûÊÇboolÀàĞÍ£¬¿ÉÒÔÉèÖÃÎªtrue; ÆäËûÀàĞÍ£¬±¨´í
+        // åˆ¤æ–­argcæ•°é‡s
+        if (i + 1 >= argc) { // åé¢æ²¡æœ‰å‚æ•°äº†
+			// å¦‚æœæ˜¯boolç±»å‹ï¼Œå¯ä»¥è®¾ç½®ä¸ºtrue; å…¶ä»–ç±»å‹ï¼ŒæŠ¥é”™
 			if (flag->type == FlagType::Bool) {
                 flag->SetVal("true");
 				continue;
@@ -455,10 +453,10 @@ void Flag::Parse(int argc, char** argv) {
 			}
         }
 
-        // ÅĞ¶ÏÖµÊÇ·ñºÏ·¨
+        // åˆ¤æ–­å€¼æ˜¯å¦åˆæ³•
         bool isSuitVal = judgeSuitableValue(flag->type, argv[i + 1]);
-        if (!isSuitVal && flag->type == FlagType::Bool) { //bool -> ÅĞ¶ÏÏÂÒ»¸öÊÇ·ñÊÇ²ÎÊı
-			if (argv[i + 1][0] == '-') { // ÏÂÒ»¸öÊÇ²ÎÊı£¬ÉèÖÃÎªtrue
+        if (!isSuitVal && flag->type == FlagType::Bool) { //bool -> åˆ¤æ–­ä¸‹ä¸€ä¸ªæ˜¯å¦æ˜¯å‚æ•°
+			if (argv[i + 1][0] == '-') { // ä¸‹ä¸€ä¸ªæ˜¯å‚æ•°ï¼Œè®¾ç½®ä¸ºtrue
                 flag->SetVal("true");
 				continue;
 			}
@@ -468,14 +466,14 @@ void Flag::Parse(int argc, char** argv) {
 		} 
                     
 
-		// ¶ÔÓÚ²»ºÏ·¨µÄÖµ£¬±¨´í
+		// å¯¹äºä¸åˆæ³•çš„å€¼ï¼ŒæŠ¥é”™
         if (!isSuitVal) {
 			std::cerr << "Flag " << flag_name << " needs a value" << std::endl;
 			exit(EXIT_FAILURE);
 		} 
                     
                     
-		// ºóÃæÒ»¶¨ÓĞ²ÎÊı£¬ÇÒ²ÎÊı·ûºÏµ±Ç°ÀàĞÍµÄÔ¤ÆÚ
+		// åé¢ä¸€å®šæœ‰å‚æ•°ï¼Œä¸”å‚æ•°ç¬¦åˆå½“å‰ç±»å‹çš„é¢„æœŸ
         i++;
         if(flag->type == FlagType::Bool) {
             value = stringToBool(argv[i]) ? "true" : "false";
@@ -486,7 +484,7 @@ void Flag::Parse(int argc, char** argv) {
         flag->SetVal(value);
     }
     
-	// ¼ì²éÊÇ·ñÓĞ±ØĞëµÄ²ÎÊıÃ»ÓĞÉèÖÃ
+	// æ£€æŸ¥æ˜¯å¦æœ‰å¿…é¡»çš„å‚æ•°æ²¡æœ‰è®¾ç½®
 	for (const auto& flag : m_flags) {
 		if (flag->isRequired && flag->value == nullptr) {
 			std::cerr << "Flag " << flag->name << " is required" << std::endl;

@@ -6,12 +6,12 @@
 
 class FileWriter {
 public:
-    // ¹¹Ôìº¯Êı
+    // æ„é€ å‡½æ•°
     FileWriter(const std::string& Filename, bool is_write = false) :
         filename(Filename), m_is_write(is_write){
 		if (!is_write) return;
 
-		// Ê¹ÓÃ¶ş½øÖÆÄ£Ê½´ò¿ªÎÄ¼ş
+		// ä½¿ç”¨äºŒè¿›åˆ¶æ¨¡å¼æ‰“å¼€æ–‡ä»¶
 		outFile = new std::ofstream(filename, std::ios::binary);
 
         if (!outFile->is_open()) {
@@ -30,7 +30,7 @@ public:
 
     }
 
-    // Ğ´ÈëÊı¾İµ½ÎÄ¼şµÄ·½·¨
+    // å†™å…¥æ•°æ®åˆ°æ–‡ä»¶çš„æ–¹æ³•
     bool WriteData(void* data, int size) {
         if (!m_is_write) {
 			std::cout << "FileWriter is not write" << std::endl;
@@ -41,10 +41,10 @@ public:
             return false;
         }
 
-        // Ğ´ÈëÊı¾İµ½ÎÄ¼ş
+        // å†™å…¥æ•°æ®åˆ°æ–‡ä»¶
         outFile->write(reinterpret_cast<char*>(data), size);
 
-        // ¼ì²éÊÇ·ñ³É¹¦Ğ´Èë
+        // æ£€æŸ¥æ˜¯å¦æˆåŠŸå†™å…¥
         if (!outFile->good()) {
             std::cerr << "Failed to write data to file: " << filename << std::endl;
             return false;
@@ -54,9 +54,9 @@ public:
 
 private:
 	bool m_is_write = false;
-    // Ê¹ÓÃ¶ş½øÖÆÄ£Ê½´ò¿ªÎÄ¼ş
+    // ä½¿ç”¨äºŒè¿›åˆ¶æ¨¡å¼æ‰“å¼€æ–‡ä»¶
     std::ofstream* outFile;
-    std::string filename; // ÎÄ¼şÃû
+    std::string filename; // æ–‡ä»¶å
 };
 
 #endif // FileWriter_hpp
